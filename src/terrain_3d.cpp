@@ -10,55 +10,55 @@
 int Terrain3D::debug_level{ ERROR };
 
 void Terrain3D::_initialize() {
-	print_line(INFO, "Checking initialization of main subsystems");
+	TERRAINLOG(INFO, "Checking initialization of main subsystems");
 
 	// Make blank objects if needed
 	if (_material.is_null()) {
-		print_line(DEBUG, "Creating blank material");
+		TERRAINLOG(DEBUG, "Creating blank material");
 		_material.instantiate();
 	}
 	if (_data == nullptr) {
-		print_line(DEBUG, "Creating blank data object");
+		TERRAINLOG(DEBUG, "Creating blank data object");
 		_data = memnew(Terrain3DData);
 	}
 	if (_assets.is_null()) {
-		print_line(DEBUG, "Creating blank texture list");
+		TERRAINLOG(DEBUG, "Creating blank texture list");
 		_assets.instantiate();
 	}
 	if (_instancer == nullptr) {
-		print_line(DEBUG, "Creating blank instancer");
+		TERRAINLOG(DEBUG, "Creating blank instancer");
 		_instancer = memnew(Terrain3DInstancer);
 	}
 
 	// Connect signals
 	// Any region was changed, update region labels
 	if (!_data->is_connected("region_map_changed", callable_mp(this, &Terrain3D::update_region_labels))) {
-		print_line(DEBUG, "Connecting _data::region_map_changed signal to set_show_region_locations()");
+		TERRAINLOG(DEBUG, "Connecting _data::region_map_changed signal to set_show_region_locations()");
 		_data->connect("region_map_changed", callable_mp(this, &Terrain3D::update_region_labels));
 	}
 	// Any region was changed, regenerate collision if enabled
 	if (!_data->is_connected("region_map_changed", callable_mp(this, &Terrain3D::_build_collision))) {
-		print_line(DEBUG, "Connecting _data::region_map_changed signal to _build_collision()");
+		TERRAINLOG(DEBUG, "Connecting _data::region_map_changed signal to _build_collision()");
 		_data->connect("region_map_changed", callable_mp(this, &Terrain3D::_build_collision));
 	}
 	// Any map was regenerated or regions changed, update material
 	if (!_data->is_connected("maps_changed", callable_mp(_material.ptr(), &Terrain3DMaterial::_update_maps))) {
-		print_line(DEBUG, "Connecting _data::maps_changed signal to _material->_update_maps()");
+		TERRAINLOG(DEBUG, "Connecting _data::maps_changed signal to _material->_update_maps()");
 		_data->connect("maps_changed", callable_mp(_material.ptr(), &Terrain3DMaterial::_update_maps));
 	}
 	// Height map was regenerated, update aabbs
 	if (!_data->is_connected("height_maps_changed", callable_mp(this, &Terrain3D::update_aabbs))) {
-		print_line(DEBUG, "Connecting _data::height_maps_changed signal to update_aabbs()");
+		TERRAINLOG(DEBUG, "Connecting _data::height_maps_changed signal to update_aabbs()");
 		_data->connect("height_maps_changed", callable_mp(this, &Terrain3D::update_aabbs));
 	}
 	// Texture assets changed, update material
 	if (!_assets->is_connected("textures_changed", callable_mp(_material.ptr(), &Terrain3DMaterial::_update_texture_arrays))) {
-		print_line(DEBUG, "Connecting _assets.textures_changed to _material->_update_texture_arrays()");
+		TERRAINLOG(DEBUG, "Connecting _assets.textures_changed to _material->_update_texture_arrays()");
 		_assets->connect("textures_changed", callable_mp(_material.ptr(), &Terrain3DMaterial::_update_texture_arrays));
 	}
 	// MeshAssets changed, update instancer
 	if (!_assets->is_connected("meshes_changed", callable_mp(_instancer, &Terrain3DInstancer::_update_mmis).bind(V2I_MAX, -1))) {
-		print_line(DEBUG, "Connecting _assets.meshes_changed to _instancer->_update_mmis()");
+		TERRAINLOG(DEBUG, "Connecting _assets.meshes_changed to _instancer->_update_mmis()");
 		_assets->connect("meshes_changed", callable_mp(_instancer, &Terrain3DInstancer::_update_mmis).bind(V2I_MAX, -1));
 	}
 
@@ -85,7 +85,7 @@ void Terrain3D::__process(const double p_delta) {
 
 	// If the game/editor camera is not set, find it
 	if (!is_instance_valid(_camera_instance_id, _camera)) {
-		print_line(DEBUG, "Camera is null, getting the current one");
+		TERRAINLOG(DEBUG, "Camera is null, getting the current one");
 		_grab_camera();
 	}
 
@@ -107,17 +107,17 @@ void Terrain3D::__process(const double p_delta) {
 void Terrain3D::_grab_camera() {
 	if (IS_EDITOR) {
 		_camera = EditorInterface::get_singleton()->get_editor_viewport_3d(0)->get_camera_3d();
-		print_line(DEBUG, "Grabbing the first editor viewport camera: ", _camera);
+		TERRAINLOG(DEBUG, "Grabbing the first editor viewport camera: ", _camera);
 	} else {
 		_camera = get_viewport()->get_camera_3d();
-		print_line(DEBUG, "Grabbing the in-game viewport camera: ", _camera);
+		TERRAINLOG(DEBUG, "Grabbing the in-game viewport camera: ", _camera);
 	}
 	if (_camera) {
 		_camera_instance_id = _camera->get_instance_id();
 	} else {
 		_camera_instance_id = 0;
 		set_process(false); // disable snapping
-		print_line(ERROR, "Cannot find the active camera. Set it manually with Terrain3D.set_camera(). Stopping _process()");
+		TERRAINLOG(ERROR, "Cannot find the active camera. Set it manually with Terrain3D.set_camera(). Stopping _process()");
 	}
 }
 
@@ -137,7 +137,7 @@ void Terrain3D::_destroy_containers() {
 
 void Terrain3D::_destroy_labels() {
 	Array labels = _label_nodes->get_children();
-	print_line(DEBUG, "Destroying ", labels.size(), " region labels");
+	TERRAINLOG(DEBUG, "Destroying ", labels.size(), " region labels");
 	for (int i = 0; i < labels.size(); i++) {
 		Node *label = cast_to<Node>(labels[i]);
 		memdelete_safely(label);
@@ -157,19 +157,19 @@ void Terrain3D::_build_collision() {
 		return;
 	}
 	if (_data == nullptr) {
-		print_line(ERROR, "_data missing, cannot create collision");
+		TERRAINLOG(ERROR, "_data missing, cannot create collision");
 		return;
 	}
 	_destroy_collision();
 
 	if (!_is_collision_editor()) {
-		print_line(INFO, "Building collision with physics server");
+		TERRAINLOG(INFO, "Building collision with physics server");
 		_static_body = PhysicsServer3D::get_singleton()->body_create();
 		PhysicsServer3D::get_singleton()->body_set_mode(_static_body, PhysicsServer3D::BODY_MODE_STATIC);
 		PhysicsServer3D::get_singleton()->body_set_space(_static_body, get_world_3d()->get_space());
 		PhysicsServer3D::get_singleton()->body_attach_object_instance_id(_static_body, get_instance_id());
 	} else {
-		print_line(WARN, "Building editor collision. Disable this mode for releases");
+		TERRAINLOG(WARN, "Building editor collision. Disable this mode for releases");
 		_debug_static_body = memnew(StaticBody3D);
 		_debug_static_body->set_name("StaticBody3D");
 		_debug_static_body->set_as_top_level(true);
@@ -209,7 +209,7 @@ void Terrain3D::_update_collision() {
 		Ref<Image> cmap, cmap_x, cmap_z, cmap_xz;
 		Ref<Terrain3DRegion> region = _data->get_region(region_loc);
 		if (region.is_null()) {
-			print_line(ERROR, "Region ", region_loc, " not found");
+			TERRAINLOG(ERROR, "Region ", region_loc, " not found");
 			continue;
 		}
 		map = region->get_map(TYPE_HEIGHT);
@@ -306,12 +306,12 @@ void Terrain3D::_update_collision() {
 			_debug_static_body->set_collision_priority(_collision_priority);
 		}
 	}
-	print_line(DEBUG, "Collision creation time: ", OS::get_singleton()->get_ticks_msec() - time, " ms");
+	TERRAINLOG(DEBUG, "Collision creation time: ", OS::get_singleton()->get_ticks_msec() - time, " ms");
 }
 
 void Terrain3D::_destroy_collision() {
 	if (_static_body.is_valid()) {
-		print_line(INFO, "Freeing physics body");
+		TERRAINLOG(INFO, "Freeing physics body");
 		RID shape = PhysicsServer3D::get_singleton()->body_get_shape(_static_body, 0);
 		PhysicsServer3D::get_singleton()->free(shape);
 		PhysicsServer3D::get_singleton()->free(_static_body);
@@ -319,15 +319,15 @@ void Terrain3D::_destroy_collision() {
 	}
 
 	if (_debug_static_body != nullptr) {
-		print_line(INFO, "Freeing debug static body");
+		TERRAINLOG(INFO, "Freeing debug static body");
 		for (int i = 0; i < _debug_static_body->get_child_count(); i++) {
 			Node *child = _debug_static_body->get_child(i);
-			print_line(DEBUG, "Freeing dsb child ", i, " ", child->get_name());
+			TERRAINLOG(DEBUG, "Freeing dsb child ", i, " ", child->get_name());
 			_debug_static_body->remove_child(child);
 			memdelete(child);
 		}
 
-		print_line(DEBUG, "Freeing static body");
+		TERRAINLOG(DEBUG, "Freeing static body");
 		remove_child(_debug_static_body);
 		memdelete(_debug_static_body);
 		_debug_static_body = nullptr;
@@ -336,10 +336,10 @@ void Terrain3D::_destroy_collision() {
 
 void Terrain3D::_build_meshes(const int p_mesh_lods, const int p_mesh_size) {
 	if (!is_inside_tree() || _data == nullptr) {
-		print_line(DEBUG, "Not inside the tree or no valid _data, skipping build");
+		TERRAINLOG(DEBUG, "Not inside the tree or no valid _data, skipping build");
 		return;
 	}
-	print_line(INFO, "Building the terrain meshes");
+	TERRAINLOG(INFO, "Building the terrain meshes");
 
 	// Generate terrain meshes, lods, seams
 	_meshes = GeoClipMap::generate(p_mesh_size, p_mesh_lods);
@@ -351,7 +351,7 @@ void Terrain3D::_build_meshes(const int p_mesh_lods, const int p_mesh_size) {
 		RS::get_singleton()->mesh_surface_set_material(rid, 0, material_rid);
 	}
 
-	print_line(DEBUG, "Creating mesh instances");
+	TERRAINLOG(DEBUG, "Creating mesh instances");
 
 	// Get current visual scenario so the instances appear in the scene
 	RID scenario = get_world_3d()->get_scenario();
@@ -518,7 +518,7 @@ void Terrain3D::_update_mesh_instances() {
 }
 
 void Terrain3D::_clear_meshes() {
-	print_line(INFO, "Clearing the terrain meshes");
+	TERRAINLOG(INFO, "Clearing the terrain meshes");
 	for (const RID rid : _meshes) {
 		RS::get_singleton()->free(rid);
 	}
@@ -545,10 +545,10 @@ void Terrain3D::_clear_meshes() {
 
 void Terrain3D::_setup_mouse_picking() {
 	if (!is_inside_tree()) {
-		print_line(ERROR, "Not inside the tree, skipping mouse setup");
+		TERRAINLOG(ERROR, "Not inside the tree, skipping mouse setup");
 		return;
 	}
-	print_line(INFO, "Setting up mouse picker and get_intersection viewport, camera & screen quad");
+	TERRAINLOG(INFO, "Setting up mouse picker and get_intersection viewport, camera & screen quad");
 	_mouse_vp = memnew(SubViewport);
 	_mouse_vp->set_name("MouseViewport");
 	add_child(_mouse_vp, true);
@@ -600,11 +600,11 @@ void Terrain3D::_setup_mouse_picking() {
 }
 
 void Terrain3D::_destroy_mouse_picking() {
-	print_line(DEBUG, "Freeing mouse_quad");
+	TERRAINLOG(DEBUG, "Freeing mouse_quad");
 	memdelete_safely(_mouse_quad);
-	print_line(DEBUG, "Freeing mouse_cam");
+	TERRAINLOG(DEBUG, "Freeing mouse_cam");
 	memdelete_safely(_mouse_cam);
-	print_line(DEBUG, "Freeing mouse_vp");
+	TERRAINLOG(DEBUG, "Freeing mouse_vp");
 	memdelete_safely(_mouse_vp);
 }
 
@@ -701,7 +701,7 @@ void Terrain3D::_generate_triangle_pair(PackedVector3Array &p_vertices, PackedVe
 Terrain3D::Terrain3D() {
 	// Check if we are using the compatibility renderer
 	_compatibility = String(ProjectSettings::get_singleton()->get_setting_with_override("rendering/renderer/rendering_method")).contains("gl_compatibility");
-	set_debug_level(ERROR);
+	set_debug_level(0);
 	// Process the command line
 	List<String> args = OS::get_singleton()->get_cmdline_args();
 	for (int i = args.size() - 1; i >= 0; i--) {
@@ -727,12 +727,12 @@ Terrain3D::Terrain3D() {
 }
 
 void Terrain3D::set_debug_level(const int p_level) {
-	print_line(INFO, "Setting debug level: ", p_level);
+	TERRAINLOG(INFO, "Setting debug level: ", p_level);
 	debug_level = CLAMP(p_level, 0, EXTREME);
 }
 
 void Terrain3D::set_data_directory(String p_dir) {
-	print_line(INFO, "Setting data directory to ", p_dir);
+	TERRAINLOG(INFO, "Setting data directory to ", p_dir);
 	if (_data_directory != p_dir) {
 		_clear_meshes();
 		_destroy_labels();
@@ -746,7 +746,7 @@ void Terrain3D::set_data_directory(String p_dir) {
 void Terrain3D::set_material(const Ref<Terrain3DMaterial> &p_material) {
 	if (_material != p_material) {
 		_clear_meshes();
-		print_line(INFO, "Setting material");
+		TERRAINLOG(INFO, "Setting material");
 		_material = p_material;
 		_initialize();
 		emit_signal("material_changed");
@@ -756,7 +756,7 @@ void Terrain3D::set_material(const Ref<Terrain3DMaterial> &p_material) {
 void Terrain3D::set_assets(const Ref<Terrain3DAssets> &p_assets) {
 	if (_assets != p_assets) {
 		_clear_meshes();
-		print_line(INFO, "Setting asset list");
+		TERRAINLOG(INFO, "Setting asset list");
 		_assets = p_assets;
 		_initialize();
 		emit_signal("assets_changed");
@@ -765,24 +765,24 @@ void Terrain3D::set_assets(const Ref<Terrain3DAssets> &p_assets) {
 
 void Terrain3D::set_editor(Terrain3DEditor *p_editor) {
 	_editor = p_editor;
-	print_line(DEBUG, "Received Terrain3DEditor: ", p_editor);
+	TERRAINLOG(DEBUG, "Received Terrain3DEditor: ", p_editor);
 }
 
 void Terrain3D::set_plugin(EditorPlugin *p_plugin) {
 	_plugin = p_plugin;
-	print_line(DEBUG, "Received editor plugin: ", p_plugin);
+	TERRAINLOG(DEBUG, "Received editor plugin: ", p_plugin);
 }
 
 void Terrain3D::set_camera(Camera3D *p_camera) {
 	if (_camera != p_camera) {
 		_camera = p_camera;
 		if (p_camera == nullptr) {
-			print_line(DEBUG, "Received null camera. Calling _grab_camera()");
+			TERRAINLOG(DEBUG, "Received null camera. Calling _grab_camera()");
 			_grab_camera();
 		} else {
 			_camera = p_camera;
 			_camera_instance_id = _camera->get_instance_id();
-			print_line(DEBUG, "Setting camera: ", _camera);
+			TERRAINLOG(DEBUG, "Setting camera: ", _camera);
 			_initialize();
 			set_process(true); // enable __process snapping
 		}
@@ -790,7 +790,7 @@ void Terrain3D::set_camera(Camera3D *p_camera) {
 }
 
 void Terrain3D::set_region_size(const RegionSize p_size) {
-	print_line(INFO, "Setting region size: ", p_size);
+	TERRAINLOG(INFO, "Setting region size: ", p_size);
 	ERR_FAIL_COND(p_size < SIZE_64);
 	ERR_FAIL_COND(p_size > SIZE_2048);
 	_region_size = p_size;
@@ -804,13 +804,13 @@ void Terrain3D::set_region_size(const RegionSize p_size) {
 }
 
 void Terrain3D::set_save_16_bit(const bool p_enabled) {
-	print_line(INFO, p_enabled);
+	TERRAINLOG(INFO, p_enabled);
 	_save_16_bit = p_enabled;
 }
 
 void Terrain3D::set_label_distance(const real_t p_distance) {
 	real_t distance = CLAMP(p_distance, 0.f, 100000.f);
-	print_line(INFO, "Setting region label distance: ", distance);
+	TERRAINLOG(INFO, "Setting region label distance: ", distance);
 	if (_label_distance != distance) {
 		_label_distance = distance;
 		update_region_labels();
@@ -819,7 +819,7 @@ void Terrain3D::set_label_distance(const real_t p_distance) {
 
 void Terrain3D::set_label_size(const int p_size) {
 	int size = CLAMP(p_size, 24, 128);
-	print_line(INFO, "Setting region label size: ", size);
+	TERRAINLOG(INFO, "Setting region label size: ", size);
 	if (_label_size != size) {
 		_label_size = size;
 		update_region_labels();
@@ -830,7 +830,7 @@ void Terrain3D::update_region_labels() {
 	_destroy_labels();
 	if (_label_distance > 0.f && _data != nullptr) {
 		Array region_locations = _data->get_region_locations();
-		print_line(DEBUG, "Creating ", region_locations.size(), " region labels");
+		TERRAINLOG(DEBUG, "Creating ", region_locations.size(), " region labels");
 		for (int i = 0; i < region_locations.size(); i++) {
 			Label3D *label = memnew(Label3D);
 			String text = region_locations[i];
@@ -859,7 +859,7 @@ void Terrain3D::update_region_labels() {
 }
 
 void Terrain3D::set_collision_enabled(const bool p_enabled) {
-	print_line(INFO, "Setting collision enabled: ", p_enabled);
+	TERRAINLOG(INFO, "Setting collision enabled: ", p_enabled);
 	_collision_enabled = p_enabled;
 	if (_collision_enabled) {
 		_build_collision();
@@ -869,7 +869,7 @@ void Terrain3D::set_collision_enabled(const bool p_enabled) {
 }
 
 void Terrain3D::set_collision_mode(CollisionMode p_mode) {
-	print_line(INFO, "Setting collision mode: ", p_mode);
+	TERRAINLOG(INFO, "Setting collision mode: ", p_mode);
 	if (_collision_mode != p_mode) {
 		_collision_mode = p_mode;
 		_destroy_collision();
@@ -878,7 +878,7 @@ void Terrain3D::set_collision_mode(CollisionMode p_mode) {
 }
 
 void Terrain3D::set_collision_layer(const uint32_t p_layers) {
-	print_line(INFO, "Setting collision layers: ", p_layers);
+	TERRAINLOG(INFO, "Setting collision layers: ", p_layers);
 	_collision_layer = p_layers;
 	if (_is_collision_editor()) {
 		if (_debug_static_body != nullptr) {
@@ -892,7 +892,7 @@ void Terrain3D::set_collision_layer(const uint32_t p_layers) {
 }
 
 void Terrain3D::set_collision_mask(const uint32_t p_mask) {
-	print_line(INFO, "Setting collision mask: ", p_mask);
+	TERRAINLOG(INFO, "Setting collision mask: ", p_mask);
 	_collision_mask = p_mask;
 	if (_is_collision_editor()) {
 		if (_debug_static_body != nullptr) {
@@ -906,7 +906,7 @@ void Terrain3D::set_collision_mask(const uint32_t p_mask) {
 }
 
 void Terrain3D::set_collision_priority(const real_t p_priority) {
-	print_line(INFO, "Setting collision priority: ", p_priority);
+	TERRAINLOG(INFO, "Setting collision priority: ", p_priority);
 	_collision_priority = p_priority;
 	if (_is_collision_editor()) {
 		if (_debug_static_body != nullptr) {
@@ -934,7 +934,7 @@ void Terrain3D::set_mesh_lods(const int p_count) {
 	if (_mesh_lods != p_count) {
 		_clear_meshes();
 		_destroy_collision();
-		print_line(INFO, "Setting mesh levels: ", p_count);
+		TERRAINLOG(INFO, "Setting mesh levels: ", p_count);
 		_mesh_lods = p_count;
 		_initialize();
 	}
@@ -944,7 +944,7 @@ void Terrain3D::set_mesh_size(const int p_size) {
 	if (_mesh_size != p_size) {
 		_clear_meshes();
 		_destroy_collision();
-		print_line(INFO, "Setting mesh size: ", p_size);
+		TERRAINLOG(INFO, "Setting mesh size: ", p_size);
 		_mesh_size = p_size;
 		_initialize();
 	}
@@ -954,7 +954,7 @@ void Terrain3D::set_vertex_spacing(const real_t p_spacing) {
 	real_t spacing = CLAMP(p_spacing, 0.25f, 100.0f);
 	if (_vertex_spacing != spacing) {
 		_vertex_spacing = spacing;
-		print_line(INFO, "Setting vertex spacing: ", _vertex_spacing);
+		TERRAINLOG(INFO, "Setting vertex spacing: ", _vertex_spacing);
 		_clear_meshes();
 		_destroy_collision();
 		_destroy_instancer();
@@ -969,7 +969,7 @@ void Terrain3D::set_vertex_spacing(const real_t p_spacing) {
 }
 
 void Terrain3D::set_render_layers(const uint32_t p_layers) {
-	print_line(INFO, "Setting terrain render layers to: ", p_layers);
+	TERRAINLOG(INFO, "Setting terrain render layers to: ", p_layers);
 	_render_layers = p_layers;
 	_update_mesh_instances();
 }
@@ -978,7 +978,7 @@ void Terrain3D::set_mouse_layer(const uint32_t p_layer) {
 	uint32_t layer = p_layer < 21 ? 21 : (p_layer > 32 ? 32 : p_layer);
 	_mouse_layer = layer;
 	uint32_t mouse_mask = 1 << (_mouse_layer - 1);
-	print_line(INFO, "Setting mouse layer: ", layer, " (", mouse_mask, ") on terrain mesh, material, mouse camera, mouse quad");
+	TERRAINLOG(INFO, "Setting mouse layer: ", layer, " (", mouse_mask, ") on terrain mesh, material, mouse camera, mouse quad");
 
 	// Set terrain meshes to mouse layer
 	// Mask off editor render layers by ORing user layers 1-20 and current mouse layer
@@ -1008,7 +1008,7 @@ void Terrain3D::set_gi_mode(const GeometryInstance3D::GIMode p_gi_mode) {
 }
 
 void Terrain3D::set_cull_margin(const real_t p_margin) {
-	print_line(INFO, "Setting extra cull margin: ", p_margin);
+	TERRAINLOG(INFO, "Setting extra cull margin: ", p_margin);
 	_cull_margin = p_margin;
 	update_aabbs();
 }
@@ -1019,7 +1019,7 @@ void Terrain3D::set_cull_margin(const real_t p_margin) {
 void Terrain3D::snap(const Vector3 &p_cam_pos) {
 	Vector3 cam_pos = p_cam_pos;
 	cam_pos.y = 0;
-	print_line(EXTREME, "Snapping terrain to: ", String(cam_pos));
+	TERRAINLOG(EXTREME, "Snapping terrain to: ", String(cam_pos));
 	Vector3 snapped_pos = (cam_pos / _vertex_spacing).floor() * _vertex_spacing;
 	Transform3D t = Transform3D().scaled(Vector3(_vertex_spacing, 1, _vertex_spacing));
 	t.origin = snapped_pos;
@@ -1095,12 +1095,12 @@ void Terrain3D::snap(const Vector3 &p_cam_pos) {
 
 void Terrain3D::update_aabbs() {
 	if (_meshes.is_empty() || _data == nullptr) {
-		print_line(DEBUG, "Update AABB called before terrain meshes built. Returning.");
+		TERRAINLOG(DEBUG, "Update AABB called before terrain meshes built. Returning.");
 		return;
 	}
 
 	Vector2 height_range = _data->get_height_range();
-	print_line(EXTREME, "Updating AABBs. Total height range: ", height_range, ", extra cull margin: ", _cull_margin);
+	TERRAINLOG(EXTREME, "Updating AABBs. Total height range: ", height_range, ", extra cull margin: ", _cull_margin);
 	height_range.y += abs(height_range.x); // Add below zero to total size
 
 	AABB aabb = RS::get_singleton()->mesh_get_custom_aabb(_meshes[GeoClipMap::CROSS]);
@@ -1145,11 +1145,11 @@ void Terrain3D::update_aabbs() {
  */
 Vector3 Terrain3D::get_intersection(const Vector3 &p_src_pos, const Vector3 &p_direction, const bool p_gpu_mode) {
 	if (!is_instance_valid(_camera_instance_id)) {
-		print_line(ERROR, "Invalid camera");
+		TERRAINLOG(ERROR, "Invalid camera");
 		return Vector3(NAN, NAN, NAN);
 	}
 	if (_mouse_cam == nullptr) {
-		print_line(ERROR, "Invalid mouse camera");
+		TERRAINLOG(ERROR, "Invalid mouse camera");
 		return Vector3(NAN, NAN, NAN);
 	}
 	Vector3 direction = p_direction.normalized();
@@ -1229,7 +1229,7 @@ Vector3 Terrain3D::get_intersection(const Vector3 &p_src_pos, const Vector3 &p_d
  *   generated mesh will not extend above or outside the clipmap at any LOD.
  */
 Ref<Mesh> Terrain3D::bake_mesh(const int p_lod, const Terrain3DData::HeightFilter p_filter) const {
-	print_line(INFO, "Baking mesh at lod: ", p_lod, " with filter: ", p_filter);
+	TERRAINLOG(INFO, "Baking mesh at lod: ", p_lod, " with filter: ", p_filter);
 	Ref<Mesh> result;
 	ERR_FAIL_COND_V(_data == nullptr, result);
 
@@ -1265,7 +1265,7 @@ Ref<Mesh> Terrain3D::bake_mesh(const int p_lod, const Terrain3DData::HeightFilte
  *  dynamic and/or runtime nav mesh baking).
  */
 PackedVector3Array Terrain3D::generate_nav_mesh_source_geometry(const AABB &p_global_aabb, const bool p_require_nav) const {
-	print_line(INFO, "Generating NavMesh source geometry from terrain");
+	TERRAINLOG(INFO, "Generating NavMesh source geometry from terrain");
 	PackedVector3Array faces;
 	_generate_triangles(faces, nullptr, 0, Terrain3DData::HEIGHT_FILTER_NEAREST, p_require_nav, p_global_aabb);
 	return faces;
@@ -1294,7 +1294,7 @@ void Terrain3D::_notification(const int p_what) {
 
 		case NOTIFICATION_POSTINITIALIZE: {
 			// Object initialized, before script is attached
-			print_line(INFO, "NOTIFICATION_POSTINITIALIZE");
+			TERRAINLOG(INFO, "NOTIFICATION_POSTINITIALIZE");
 			_build_containers();
 			break;
 		}
@@ -1302,7 +1302,7 @@ void Terrain3D::_notification(const int p_what) {
 		case NOTIFICATION_ENTER_WORLD: {
 			// Node3D registered to new World3D resource
 			// Sent on scene changes
-			print_line(INFO, "NOTIFICATION_ENTER_WORLD");
+			TERRAINLOG(INFO, "NOTIFICATION_ENTER_WORLD");
 			_is_inside_world = true;
 			_update_mesh_instances();
 			break;
@@ -1311,7 +1311,7 @@ void Terrain3D::_notification(const int p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 			// Node entered a SceneTree
 			// Sent on scene changes
-			print_line(INFO, "NOTIFICATION_ENTER_TREE");
+			TERRAINLOG(INFO, "NOTIFICATION_ENTER_TREE");
 			set_as_top_level(true); // Don't inherit transforms from parent. Global only.
 			set_notify_transform(true);
 			set_meta("_edit_lock_", true);
@@ -1323,7 +1323,7 @@ void Terrain3D::_notification(const int p_what) {
 
 		case NOTIFICATION_READY: {
 			// Node is ready
-			print_line(INFO, "NOTIFICATION_READY");
+			TERRAINLOG(INFO, "NOTIFICATION_READY");
 			break;
 		}
 
@@ -1345,34 +1345,34 @@ void Terrain3D::_notification(const int p_what) {
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
 			// Node3D visibility changed
-			print_line(INFO, "NOTIFICATION_VISIBILITY_CHANGED");
+			TERRAINLOG(INFO, "NOTIFICATION_VISIBILITY_CHANGED");
 			_update_mesh_instances();
 			break;
 		}
 
 		case NOTIFICATION_EXTENSION_RELOADED: {
 			// Object finished hot reloading
-			print_line(INFO, "NOTIFICATION_EXTENSION_RELOADED");
+			TERRAINLOG(INFO, "NOTIFICATION_EXTENSION_RELOADED");
 			break;
 		}
 
 		case NOTIFICATION_EDITOR_PRE_SAVE: {
 			// Editor Node is about to save the current scene
-			print_line(INFO, "NOTIFICATION_EDITOR_PRE_SAVE");
+			TERRAINLOG(INFO, "NOTIFICATION_EDITOR_PRE_SAVE");
 			if (_data_directory.is_empty()) {
-				print_line(ERROR, "Data directory is empty. Set it to write data to disk.");
+				TERRAINLOG(ERROR, "Data directory is empty. Set it to write data to disk.");
 			} else if (_data == nullptr) {
-				print_line(DEBUG, "Save requested, but no valid data object. Skipping");
+				TERRAINLOG(DEBUG, "Save requested, but no valid data object. Skipping");
 			} else {
 				_data->save_directory(_data_directory);
 			}
 			if (!_material.is_valid()) {
-				print_line(DEBUG, "Save requested, but no valid material. Skipping");
+				TERRAINLOG(DEBUG, "Save requested, but no valid material. Skipping");
 			} else {
 				_material->save();
 			}
 			if (!_assets.is_valid()) {
-				print_line(DEBUG, "Save requested, but no valid texture list. Skipping");
+				TERRAINLOG(DEBUG, "Save requested, but no valid texture list. Skipping");
 			} else {
 				_assets->save();
 			}
@@ -1387,7 +1387,7 @@ void Terrain3D::_notification(const int p_what) {
 		case NOTIFICATION_CRASH: {
 			// Godot's crash handler reports engine is about to crash
 			// Only on desktop if the crash handler is enabled
-			print_line(WARN, "NOTIFICATION_CRASH");
+			TERRAINLOG(WARN, "NOTIFICATION_CRASH");
 			break;
 		}
 
@@ -1396,7 +1396,7 @@ void Terrain3D::_notification(const int p_what) {
 		case NOTIFICATION_EXIT_TREE: {
 			// Node is about to exit a SceneTree
 			// Sent on scene changes
-			print_line(INFO, "NOTIFICATION_EXIT_TREE");
+			TERRAINLOG(INFO, "NOTIFICATION_EXIT_TREE");
 			set_process(false);
 			_clear_meshes();
 			_destroy_mouse_picking();
@@ -1406,14 +1406,14 @@ void Terrain3D::_notification(const int p_what) {
 		case NOTIFICATION_EXIT_WORLD: {
 			// Node3D unregistered from current World3D
 			// Sent on scene changes
-			print_line(INFO, "NOTIFICATION_EXIT_WORLD");
+			TERRAINLOG(INFO, "NOTIFICATION_EXIT_WORLD");
 			_is_inside_world = false;
 			break;
 		}
 
 		case NOTIFICATION_PREDELETE: {
 			// Object is about to be deleted
-			print_line(INFO, "NOTIFICATION_PREDELETE");
+			TERRAINLOG(INFO, "NOTIFICATION_PREDELETE");
 			_destroy_collision();
 			_destroy_instancer();
 			_destroy_labels();
@@ -1439,7 +1439,7 @@ void Terrain3D::_bind_methods() {
 	BIND_ENUM_CONSTANT(FULL_EDITOR);
 
 	ClassDB::bind_method(D_METHOD("get_version"), &Terrain3D::get_version);
-	ClassDB::bind_method(D_METHOD("set_debug_level", "level"), &Terrain3D::set_debug_level);
+	ClassDB::bind_method(D_METHOD("set_debug_level", "level"), &Terrain3D::set_debug_level, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_debug_level"), &Terrain3D::get_debug_level);
 	ClassDB::bind_method(D_METHOD("set_data_directory", "directory"), &Terrain3D::set_data_directory);
 	ClassDB::bind_method(D_METHOD("get_data_directory"), &Terrain3D::get_data_directory);

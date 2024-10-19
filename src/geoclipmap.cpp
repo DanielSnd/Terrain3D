@@ -121,11 +121,11 @@ RID GeoClipMap::_create_mesh(const Vector<Vector3> &p_vertices, const Vector<int
 	}
 	arrays[Mesh::ARRAY_TANGENT] = tangents;
 
-	print_line(DEBUG, "Creating mesh via the Rendering server");
+	TERRAINLOG(DEBUG, "Creating mesh via the Rendering server");
 	RID mesh = RenderingServer::get_singleton()->mesh_create();
 	RenderingServer::get_singleton()->mesh_add_surface_from_arrays(mesh, RenderingServer::PRIMITIVE_TRIANGLES, arrays);
 
-	print_line(DEBUG, "Setting custom aabb: ", p_aabb.position, ", ", p_aabb.size);
+	TERRAINLOG(DEBUG, "Setting custom aabb: ", p_aabb.position, ", ", p_aabb.size);
 	RenderingServer::get_singleton()->mesh_set_custom_aabb(mesh, p_aabb);
 
 	return mesh;
@@ -142,7 +142,7 @@ RID GeoClipMap::_create_mesh(const Vector<Vector3> &p_vertices, const Vector<int
  * repo can be considered either MIT or public domain.
  */
 Vector<RID> GeoClipMap::generate(const int p_size, const int p_levels) {
-	print_line(DEBUG, "Generating meshes of size: ", p_size, " levels: ", p_levels);
+	TERRAINLOG(DEBUG, "Generating meshes of size: ", p_size, " levels: ", p_levels);
 
 	// TODO bit of a mess here. someone care to clean up?
 	RID tile_mesh;
