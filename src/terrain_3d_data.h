@@ -3,6 +3,8 @@
 #ifndef TERRAIN3D_DATA_CLASS_H
 #define TERRAIN3D_DATA_CLASS_H
 
+#include <array>
+
 #include "constants.h"
 #include "generated_texture.h"
 #include "terrain_3d_region.h"

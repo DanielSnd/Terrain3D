@@ -3,11 +3,9 @@
 #ifndef TERRAIN3D_INSTANCER_CLASS_H
 #define TERRAIN3D_INSTANCER_CLASS_H
 
-#include <godot_cpp/classes/multi_mesh.hpp>
-#include <godot_cpp/classes/multi_mesh_instance3d.hpp>
-#include <unordered_map>
-
 #include "constants.h"
+#include "scene/3d/multimesh_instance_3d.h"
+#include "scene/resources/multimesh.h"
 
 using namespace godot;
 

@@ -1,20 +1,16 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include <godot_cpp/classes/environment.hpp>
-#include <godot_cpp/classes/image_texture.hpp>
-#include <godot_cpp/classes/rendering_server.hpp>
-#include <godot_cpp/classes/resource_saver.hpp>
-
 #include "logger.h"
 #include "terrain_3d_assets.h"
 #include "terrain_3d_util.h"
+#include "scene/resources/image_texture.h"
 
 ///////////////////////////
 // Private Functions
 ///////////////////////////
 
 void Terrain3DAssets::_swap_ids(const AssetType p_type, const int p_src_id, const int p_dst_id) {
-	LOG(INFO, "Swapping asset id: ", p_src_id, " and id: ", p_dst_id);
+	print_line(INFO, "Swapping asset id: ", p_src_id, " and id: ", p_dst_id);
 	Array list;
 	switch (p_type) {
 		case TYPE_TEXTURE:
@@ -28,7 +24,7 @@ void Terrain3DAssets::_swap_ids(const AssetType p_type, const int p_src_id, cons
 	}
 
 	if (p_src_id < 0 || p_src_id >= list.size()) {
-		LOG(ERROR, "Source id out of range: ", p_src_id);
+		print_line(ERROR, "Source id out of range: ", p_src_id);
 		return;
 	}
 	Ref<Terrain3DAssetResource> res_a = list[p_src_id];
@@ -100,7 +96,7 @@ void Terrain3DAssets::_set_asset_list(const AssetType p_type, const TypedArray<T
 			}
 		}
 		if (!res->is_connected("id_changed", callable_mp(this, &Terrain3DAssets::_swap_ids))) {
-			LOG(DEBUG, "Connecting to id_changed");
+			print_line(DEBUG, "Connecting to id_changed");
 			res->connect("id_changed", callable_mp(this, &Terrain3DAssets::_swap_ids));
 		}
 	}
@@ -123,14 +119,14 @@ void Terrain3DAssets::_set_asset(const AssetType p_type, const int p_id, const R
 	}
 
 	if (p_id < 0 || p_id >= max_size) {
-		LOG(ERROR, "Invalid asset id: ", p_id, " range is 0-", max_size);
+		print_line(ERROR, "Invalid asset id: ", p_id, " range is 0-", max_size);
 		return;
 	}
 	// Delete asset if null
 	if (p_asset.is_null()) {
 		// If final asset, remove it
 		if (p_id == list.size() - 1) {
-			LOG(DEBUG, "Deleting asset id: ", p_id);
+			print_line(DEBUG, "Deleting asset id: ", p_id);
 			list.pop_back();
 		} else if (p_id < list.size()) {
 			// Else just clear it
@@ -144,7 +140,7 @@ void Terrain3DAssets::_set_asset(const AssetType p_type, const int p_id, const R
 			p_asset->_id = list.size();
 			list.push_back(p_asset);
 			if (!p_asset->is_connected("id_changed", callable_mp(this, &Terrain3DAssets::_swap_ids))) {
-				LOG(DEBUG, "Connecting to id_changed");
+				print_line(DEBUG, "Connecting to id_changed");
 				p_asset->connect("id_changed", callable_mp(this, &Terrain3DAssets::_swap_ids));
 			}
 		} else {
@@ -156,7 +152,7 @@ void Terrain3DAssets::_set_asset(const AssetType p_type, const int p_id, const R
 
 void Terrain3DAssets::_update_texture_files() {
 	IS_INIT(VOID);
-	LOG(DEBUG, "Received texture_changed signal");
+	print_line(DEBUG, "Received texture_changed signal");
 	_generated_albedo_textures.clear();
 	_generated_normal_textures.clear();
 	if (_texture_list.is_empty()) {
@@ -166,7 +162,7 @@ void Terrain3DAssets::_update_texture_files() {
 
 	// Detect image sizes and formats
 
-	LOG(INFO, "Validating texture sizes");
+	print_line(INFO, "Validating texture sizes");
 	Vector2i albedo_size = V2I_ZERO;
 	Vector2i normal_size = V2I_ZERO;
 
@@ -191,7 +187,7 @@ void Terrain3DAssets::_update_texture_files() {
 			if (albedo_size.length() == 0.0) {
 				albedo_size = tex_size;
 			} else if (tex_size != albedo_size) {
-				LOG(ERROR, "Texture ID ", i, " albedo size: ", tex_size, " doesn't match size of first texture: ", albedo_size, ". They must be identical. Read Texture Prep in docs.");
+				print_line(ERROR, "Texture ID ", i, " albedo size: ", tex_size, " doesn't match size of first texture: ", albedo_size, ". They must be identical. Read Texture Prep in docs.");
 				return;
 			}
 			Ref<Image> img = albedo_tex->get_image();
@@ -205,7 +201,7 @@ void Terrain3DAssets::_update_texture_files() {
 				albedo_format = format;
 				albedo_mipmaps = img->has_mipmaps();
 			} else if (format != albedo_format) {
-				LOG(ERROR, "Texture ID ", i, " albedo format: ", format, " doesn't match format of first texture: ", albedo_format, ". They must be identical. Read Texture Prep in docs.");
+				print_line(ERROR, "Texture ID ", i, " albedo format: ", format, " doesn't match format of first texture: ", albedo_format, ". They must be identical. Read Texture Prep in docs.");
 				return;
 			}
 		}
@@ -214,7 +210,7 @@ void Terrain3DAssets::_update_texture_files() {
 			if (normal_size.length() == 0.0) {
 				normal_size = tex_size;
 			} else if (tex_size != normal_size) {
-				LOG(ERROR, "Texture ID ", i, " normal size: ", tex_size, " doesn't match size of first texture: ", normal_size, ". They must be identical. Read Texture Prep in docs.");
+				print_line(ERROR, "Texture ID ", i, " normal size: ", tex_size, " doesn't match size of first texture: ", normal_size, ". They must be identical. Read Texture Prep in docs.");
 				return;
 			}
 			Ref<Image> img = normal_tex->get_image();
@@ -228,7 +224,7 @@ void Terrain3DAssets::_update_texture_files() {
 				normal_format = format;
 				normal_mipmaps = img->has_mipmaps();
 			} else if (format != normal_format) {
-				LOG(ERROR, "Texture ID ", i, " normal format: ", format, " doesn't match format of first texture: ", normal_format, ". They must be identical. Read Texture Prep in docs.");
+				print_line(ERROR, "Texture ID ", i, " normal format: ", format, " doesn't match format of first texture: ", normal_format, ". They must be identical. Read Texture Prep in docs.");
 				return;
 			}
 		}
@@ -247,7 +243,7 @@ void Terrain3DAssets::_update_texture_files() {
 	// Generate TextureArrays and replace nulls with a empty image
 
 	if (_generated_albedo_textures.is_dirty() && albedo_size != V2I_ZERO) {
-		LOG(INFO, "Regenerating albedo texture array");
+		print_line(INFO, "Regenerating albedo texture array");
 		Array albedo_texture_array;
 		for (int i = 0; i < _texture_list.size(); i++) {
 			Ref<Terrain3DTextureAsset> texture_set = _texture_list[i];
@@ -259,7 +255,7 @@ void Terrain3DAssets::_update_texture_files() {
 
 			if (tex.is_null()) {
 				img = Util::get_filled_image(albedo_size, COLOR_CHECKED, albedo_mipmaps, albedo_format);
-				LOG(DEBUG, "ID ", i, " albedo texture is null. Creating a new one. Format: ", img->get_format());
+				print_line(DEBUG, "ID ", i, " albedo texture is null. Creating a new one. Format: ", img->get_format());
 				texture_set->_albedo_texture = ImageTexture::create_from_image(img);
 			} else {
 				img = tex->get_image();
@@ -268,7 +264,7 @@ void Terrain3DAssets::_update_texture_files() {
 					warn_compatibility_decompress = true;
 					img->decompress();
 				}
-				LOG(DEBUG, "ID ", i, " albedo texture is valid. Format: ", img->get_format());
+				print_line(DEBUG, "ID ", i, " albedo texture is valid. Format: ", img->get_format());
 			}
 			albedo_texture_array.push_back(img);
 		}
@@ -278,7 +274,7 @@ void Terrain3DAssets::_update_texture_files() {
 	}
 
 	if (_generated_normal_textures.is_dirty() && normal_size != V2I_ZERO) {
-		LOG(INFO, "Regenerating normal texture arrays");
+		print_line(INFO, "Regenerating normal texture arrays");
 
 		Array normal_texture_array;
 
@@ -292,7 +288,7 @@ void Terrain3DAssets::_update_texture_files() {
 
 			if (tex.is_null()) {
 				img = Util::get_filled_image(normal_size, COLOR_NORMAL, normal_mipmaps, normal_format);
-				LOG(DEBUG, "ID ", i, " normal texture is null. Creating a new one. Format: ", img->get_format());
+				print_line(DEBUG, "ID ", i, " normal texture is null. Creating a new one. Format: ", img->get_format());
 				texture_set->_normal_texture = ImageTexture::create_from_image(img);
 			} else {
 				img = tex->get_image();
@@ -301,7 +297,7 @@ void Terrain3DAssets::_update_texture_files() {
 					warn_compatibility_decompress = true;
 					img->decompress();
 				}
-				LOG(DEBUG, "ID ", i, " Normal texture is valid. Format: ", img->get_format());
+				print_line(DEBUG, "ID ", i, " Normal texture is valid. Format: ", img->get_format());
 			}
 			normal_texture_array.push_back(img);
 		}
@@ -317,9 +313,9 @@ void Terrain3DAssets::_update_texture_files() {
 }
 
 void Terrain3DAssets::_update_texture_settings() {
-	LOG(DEBUG, "Received setting_changed signal");
+	print_line(DEBUG, "Received setting_changed signal");
 	if (!_texture_list.is_empty()) {
-		LOG(INFO, "Updating terrain color and scale arrays");
+		print_line(INFO, "Updating terrain color and scale arrays");
 		_texture_colors.clear();
 		_texture_uv_scales.clear();
 		_texture_detiles.clear();
@@ -351,32 +347,32 @@ void Terrain3DAssets::initialize(Terrain3D *p_terrain) {
 	_terrain = p_terrain;
 
 	// Setup Mesh preview environment
-	scenario = RS->scenario_create();
+	scenario = RenderingServer::get_singleton()->scenario_create();
 
-	viewport = RS->viewport_create();
-	RS->viewport_set_update_mode(viewport, RenderingServer::VIEWPORT_UPDATE_DISABLED);
-	RS->viewport_set_scenario(viewport, scenario);
-	RS->viewport_set_size(viewport, 128, 128);
-	RS->viewport_set_transparent_background(viewport, true);
-	RS->viewport_set_active(viewport, true);
-	viewport_texture = RS->viewport_get_texture(viewport);
+	viewport = RenderingServer::get_singleton()->viewport_create();
+	RenderingServer::get_singleton()->viewport_set_update_mode(viewport, RenderingServer::VIEWPORT_UPDATE_DISABLED);
+	RenderingServer::get_singleton()->viewport_set_scenario(viewport, scenario);
+	RenderingServer::get_singleton()->viewport_set_size(viewport, 128, 128);
+	RenderingServer::get_singleton()->viewport_set_transparent_background(viewport, true);
+	RenderingServer::get_singleton()->viewport_set_active(viewport, true);
+	viewport_texture = RenderingServer::get_singleton()->viewport_get_texture(viewport);
 
-	camera = RS->camera_create();
-	RS->viewport_attach_camera(viewport, camera);
-	RS->camera_set_transform(camera, Transform3D(Basis(), Vector3(0, 0, 3)));
-	RS->camera_set_orthogonal(camera, 1.0, 0.01, 1000.0);
+	camera = RenderingServer::get_singleton()->camera_create();
+	RenderingServer::get_singleton()->viewport_attach_camera(viewport, camera);
+	RenderingServer::get_singleton()->camera_set_transform(camera, Transform3D(Basis(), Vector3(0, 0, 3)));
+	RenderingServer::get_singleton()->camera_set_orthogonal(camera, 1.0, 0.01, 1000.0);
 
-	key_light = RS->directional_light_create();
-	key_light_instance = RS->instance_create2(key_light, scenario);
-	RS->instance_set_transform(key_light_instance, Transform3D().looking_at(Vector3(-1, -1, -1), Vector3(0, 1, 0)));
+	key_light = RenderingServer::get_singleton()->directional_light_create();
+	key_light_instance = RenderingServer::get_singleton()->instance_create2(key_light, scenario);
+	RenderingServer::get_singleton()->instance_set_transform(key_light_instance, Transform3D().looking_at(Vector3(-1, -1, -1), Vector3(0, 1, 0)));
 
-	fill_light = RS->directional_light_create();
-	RS->light_set_color(fill_light, Color(0.3, 0.3, 0.3));
-	fill_light_instance = RS->instance_create2(fill_light, scenario);
-	RS->instance_set_transform(fill_light_instance, Transform3D().looking_at(Vector3(0, 1, 0), Vector3(0, 0, 1)));
+	fill_light = RenderingServer::get_singleton()->directional_light_create();
+	RenderingServer::get_singleton()->light_set_color(fill_light, Color(0.3, 0.3, 0.3));
+	fill_light_instance = RenderingServer::get_singleton()->instance_create2(fill_light, scenario);
+	RenderingServer::get_singleton()->instance_set_transform(fill_light_instance, Transform3D().looking_at(Vector3(0, 1, 0), Vector3(0, 0, 1)));
 
-	mesh_instance = RS->instance_create();
-	RS->instance_set_scenario(mesh_instance, scenario);
+	mesh_instance = RenderingServer::get_singleton()->instance_create();
+	RenderingServer::get_singleton()->instance_set_scenario(mesh_instance, scenario);
 
 	// Update assets
 	update_texture_list();
@@ -386,44 +382,44 @@ void Terrain3DAssets::initialize(Terrain3D *p_terrain) {
 Terrain3DAssets::~Terrain3DAssets() {
 	_generated_albedo_textures.clear();
 	_generated_normal_textures.clear();
-	RS->free_rid(mesh_instance);
-	RS->free_rid(fill_light_instance);
-	RS->free_rid(fill_light);
-	RS->free_rid(key_light_instance);
-	RS->free_rid(key_light);
-	RS->free_rid(camera);
-	RS->free_rid(viewport);
-	RS->free_rid(scenario);
+	RenderingServer::get_singleton()->free(mesh_instance);
+	RenderingServer::get_singleton()->free(fill_light_instance);
+	RenderingServer::get_singleton()->free(fill_light);
+	RenderingServer::get_singleton()->free(key_light_instance);
+	RenderingServer::get_singleton()->free(key_light);
+	RenderingServer::get_singleton()->free(camera);
+	RenderingServer::get_singleton()->free(viewport);
+	RenderingServer::get_singleton()->free(scenario);
 }
 
 void Terrain3DAssets::set_texture(const int p_id, const Ref<Terrain3DTextureAsset> &p_texture) {
 	if (_texture_list.size() <= p_id || p_texture != _texture_list[p_id]) {
-		LOG(INFO, "Setting texture id: ", p_id);
+		print_line(INFO, "Setting texture id: ", p_id);
 		_set_asset(TYPE_TEXTURE, p_id, p_texture);
 		update_texture_list();
 	}
 }
 
 void Terrain3DAssets::set_texture_list(const TypedArray<Terrain3DTextureAsset> &p_texture_list) {
-	LOG(INFO, "Setting texture list with ", p_texture_list.size(), " entries");
+	print_line(INFO, "Setting texture list with ", p_texture_list.size(), " entries");
 	_set_asset_list(TYPE_TEXTURE, p_texture_list);
 	update_texture_list();
 }
 
 void Terrain3DAssets::update_texture_list() {
-	LOG(INFO, "Reconnecting texture signals");
+	print_line(INFO, "Reconnecting texture signals");
 	for (int i = 0; i < _texture_list.size(); i++) {
 		Ref<Terrain3DTextureAsset> texture_set = _texture_list[i];
 		if (texture_set.is_null()) {
-			LOG(ERROR, "Texture id ", i, " is null, but shouldn't be.");
+			print_line(ERROR, "Texture id ", i, " is null, but shouldn't be.");
 			continue;
 		}
 		if (!texture_set->is_connected("file_changed", callable_mp(this, &Terrain3DAssets::_update_texture_files))) {
-			LOG(DEBUG, "Connecting file_changed signal");
+			print_line(DEBUG, "Connecting file_changed signal");
 			texture_set->connect("file_changed", callable_mp(this, &Terrain3DAssets::_update_texture_files));
 		}
 		if (!texture_set->is_connected("setting_changed", callable_mp(this, &Terrain3DAssets::_update_texture_settings))) {
-			LOG(DEBUG, "Connecting setting_changed signal");
+			print_line(DEBUG, "Connecting setting_changed signal");
 			texture_set->connect("setting_changed", callable_mp(this, &Terrain3DAssets::_update_texture_settings));
 		}
 	}
@@ -434,7 +430,7 @@ void Terrain3DAssets::update_texture_list() {
 }
 
 void Terrain3DAssets::set_mesh_asset(const int p_id, const Ref<Terrain3DMeshAsset> &p_mesh_asset) {
-	LOG(INFO, "Setting mesh id: ", p_id, ", ", p_mesh_asset);
+	print_line(INFO, "Setting mesh id: ", p_id, ", ", p_mesh_asset);
 	_set_asset(TYPE_MESH, p_id, p_mesh_asset);
 	if (p_mesh_asset.is_null()) {
 		IS_INSTANCER_INIT(VOID);
@@ -451,7 +447,7 @@ Ref<Terrain3DMeshAsset> Terrain3DAssets::get_mesh_asset(const int p_id) const {
 }
 
 void Terrain3DAssets::set_mesh_list(const TypedArray<Terrain3DMeshAsset> &p_mesh_list) {
-	LOG(INFO, "Setting mesh list with ", p_mesh_list.size(), " entries");
+	print_line(INFO, "Setting mesh list with ", p_mesh_list.size(), " entries");
 	_set_asset_list(TYPE_MESH, p_mesh_list);
 	update_mesh_list();
 }
@@ -470,22 +466,22 @@ void Terrain3DAssets::create_mesh_thumbnails(const int p_id, const Vector2i &p_s
 	}
 	Vector2i size = CLAMP(p_size, Vector2i(1, 1), Vector2i(4096, 4096));
 
-	LOG(INFO, "Creating thumbnails for ids: ", start, " through ", end - 1);
+	print_line(INFO, "Creating thumbnails for ids: ", start, " through ", end - 1);
 	for (int i = start; i < end; i++) {
 		Ref<Terrain3DMeshAsset> tmesh = get_mesh_asset(i);
 		if (tmesh.is_null()) {
-			LOG(WARN, i, ": Terrain3DMeshAsset is null");
+			print_line(WARN, i, ": Terrain3DMeshAsset is null");
 			continue;
 		}
-		LOG(DEBUG, i, ": Getting Terrain3DMeshAsset: ", String::num_uint64(tmesh->get_instance_id()));
+		LOG(DEBUG, i, ": Getting Terrain3DMeshAsset: ", tmesh->get_instance_id());
 		Ref<Mesh> mesh = tmesh->get_mesh(0);
-		LOG(DEBUG, i, ": Getting Mesh 0: ", mesh);
+		print_line(DEBUG, i, ": Getting Mesh 0: ", mesh);
 		if (mesh.is_null()) {
-			LOG(WARN, i, ": Mesh is null");
+			print_line(WARN, i, ": Mesh is null");
 			continue;
 		}
 
-		RS->instance_set_base(mesh_instance, mesh->get_rid());
+		RenderingServer::get_singleton()->instance_set_base(mesh_instance, mesh->get_rid());
 
 		AABB aabb = mesh->get_aabb();
 		Vector3 ofs = aabb.get_center();
@@ -502,19 +498,19 @@ void Terrain3DAssets::create_mesh_thumbnails(const int p_id, const Vector2i &p_s
 		xform.basis.scale(Vector3(m, m, m));
 		xform.origin = -xform.basis.xform(ofs);
 		xform.origin.z -= rot_aabb.size.z * 2.f;
-		RS->instance_set_transform(mesh_instance, xform);
+		RenderingServer::get_singleton()->instance_set_transform(mesh_instance, xform);
 
-		RS->viewport_set_size(viewport, size.x, size.y);
-		RS->viewport_set_update_mode(viewport, RenderingServer::VIEWPORT_UPDATE_ONCE);
-		RS->force_draw();
+		RenderingServer::get_singleton()->viewport_set_size(viewport, size.x, size.y);
+		RenderingServer::get_singleton()->viewport_set_update_mode(viewport, RenderingServer::VIEWPORT_UPDATE_ONCE);
+		RenderingServer::get_singleton()->draw(true, 0.0);
 
-		Ref<Image> img = RS->texture_2d_get(viewport_texture);
-		RS->instance_set_base(mesh_instance, RID());
+		Ref<Image> img = RenderingServer::get_singleton()->texture_2d_get(viewport_texture);
+		RenderingServer::get_singleton()->instance_set_base(mesh_instance, RID());
 
 		if (img.is_valid()) {
-			LOG(DEBUG, i, ": Retrieving image: ", img, " size: ", img->get_size(), " format: ", img->get_format());
+			print_line(DEBUG, i, ": Retrieving image: ", img, " size: ", img->get_size(), " format: ", img->get_format());
 		} else {
-			LOG(WARN, "Viewport texture is null");
+			print_line(WARN, "Viewport texture is null");
 			continue;
 		}
 
@@ -525,20 +521,20 @@ void Terrain3DAssets::create_mesh_thumbnails(const int p_id, const Vector2i &p_s
 
 void Terrain3DAssets::update_mesh_list() {
 	IS_INSTANCER_INIT(VOID);
-	LOG(INFO, "Updating mesh list");
+	print_line(INFO, "Updating mesh list");
 	if (_mesh_list.size() == 0) {
-		LOG(DEBUG, "Mesh list empty, clearing instancer and adding a default mesh");
+		print_line(DEBUG, "Mesh list empty, clearing instancer and adding a default mesh");
 		_terrain->get_instancer()->destroy();
 		Ref<Terrain3DMeshAsset> new_mesh;
 		new_mesh.instantiate();
 		new_mesh->set_generated_type(Terrain3DMeshAsset::TYPE_TEXTURE_CARD);
 		set_mesh_asset(0, new_mesh);
 	}
-	LOG(DEBUG, "Reconnecting mesh instance signals");
+	print_line(DEBUG, "Reconnecting mesh instance signals");
 	for (int i = 0; i < _mesh_list.size(); i++) {
 		Ref<Terrain3DMeshAsset> mesh_asset = _mesh_list[i];
 		if (mesh_asset.is_null()) {
-			LOG(ERROR, "Terrain3DMeshAsset id ", i, " is null, but shouldn't be.");
+			print_line(ERROR, "Terrain3DMeshAsset id ", i, " is null, but shouldn't be.");
 			continue;
 		}
 		if (mesh_asset->get_mesh().is_null()) {
@@ -546,27 +542,27 @@ void Terrain3DAssets::update_mesh_list() {
 			mesh_asset->set_generated_type(Terrain3DMeshAsset::TYPE_TEXTURE_CARD);
 		}
 		if (!mesh_asset->is_connected("file_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list))) {
-			LOG(DEBUG, "Connecting file_changed signal to self");
+			print_line(DEBUG, "Connecting file_changed signal to self");
 			mesh_asset->connect("file_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list));
 		}
 		if (!mesh_asset->is_connected("setting_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list))) {
-			LOG(DEBUG, "Connecting setting_changed signal to self");
+			print_line(DEBUG, "Connecting setting_changed signal to self");
 			mesh_asset->connect("setting_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list));
 		}
 		if (!mesh_asset->is_connected("file_changed", callable_mp(this, &Terrain3DAssets::_update_thumbnail).bind(mesh_asset))) {
-			LOG(DEBUG, "Connecting file_changed signal to _update_thumbnail");
+			print_line(DEBUG, "Connecting file_changed signal to _update_thumbnail");
 			mesh_asset->connect("file_changed", callable_mp(this, &Terrain3DAssets::_update_thumbnail).bind(mesh_asset));
 		}
 		if (!mesh_asset->is_connected("setting_changed", callable_mp(this, &Terrain3DAssets::_update_thumbnail).bind(mesh_asset))) {
-			LOG(DEBUG, "Connecting setting_changed signal to _update_thumbnail");
+			print_line(DEBUG, "Connecting setting_changed signal to _update_thumbnail");
 			mesh_asset->connect("setting_changed", callable_mp(this, &Terrain3DAssets::_update_thumbnail).bind(mesh_asset));
 		}
 		if (!mesh_asset->is_connected("instancer_setting_changed", callable_mp(_terrain->get_instancer(), &Terrain3DInstancer::force_update_mmis))) {
-			LOG(DEBUG, "Connecting instancer_setting_changed signal to _update_mmis");
+			print_line(DEBUG, "Connecting instancer_setting_changed signal to _update_mmis");
 			mesh_asset->connect("instancer_setting_changed", callable_mp(_terrain->get_instancer(), &Terrain3DInstancer::force_update_mmis));
 		}
 	}
-	LOG(DEBUG, "Emitting meshes_changed");
+	print_line(DEBUG, "Emitting meshes_changed");
 	emit_signal("meshes_changed");
 }
 
@@ -583,12 +579,12 @@ Error Terrain3DAssets::save(const String &p_path) {
 	Error err = OK;
 	String path = get_path();
 	if (path.get_extension() == "tres" || path.get_extension() == "res") {
-		LOG(DEBUG, "Attempting to save external file: " + path);
-		err = ResourceSaver::get_singleton()->save(this, path, ResourceSaver::FLAG_COMPRESS);
+		print_line(DEBUG, "Attempting to save external file: " + path);
+		err = ResourceSaver::save(this, path, ResourceSaver::FLAG_COMPRESS);
 		if (err == OK) {
-			LOG(INFO, "File saved successfully: ", path);
+			print_line(INFO, "File saved successfully: ", path);
 		} else {
-			LOG(ERROR, "Cannot save file: ", path, ". Error code: ", ERROR, ". Look up @GlobalScope Error enum in the Godot docs");
+			print_line(ERROR, "Cannot save file: ", path, ". Error code: ", ERROR, ". Look up @GlobalScope Error enum in the Godot docs");
 		}
 	}
 	return err;
@@ -627,8 +623,8 @@ void Terrain3DAssets::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save", "path"), &Terrain3DAssets::save, DEFVAL(""));
 
 	int ro_flags = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY;
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_list", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DMeshAsset"), ro_flags), "set_mesh_list", "get_mesh_list");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "texture_list", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DTextureAsset"), ro_flags), "set_texture_list", "get_texture_list");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_list", PROPERTY_HINT_ARRAY_TYPE, vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DMeshAsset"), ro_flags), "set_mesh_list", "get_mesh_list");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "texture_list", PROPERTY_HINT_ARRAY_TYPE, vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DTextureAsset"), ro_flags), "set_texture_list", "get_texture_list");
 
 	ADD_SIGNAL(MethodInfo("meshes_changed"));
 	ADD_SIGNAL(MethodInfo("textures_changed"));

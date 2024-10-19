@@ -1,7 +1,5 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include <godot_cpp/classes/resource_saver.hpp>
-
 #include "logger.h"
 #include "terrain_3d_data.h"
 #include "terrain_3d_region.h"
@@ -12,10 +10,10 @@
 /////////////////////
 
 void Terrain3DRegion::set_version(const real_t p_version) {
-	LOG(INFO, vformat("%.3f", p_version));
+	TERRAINLOG(INFO, vformat("%.3f", p_version));
 	_version = p_version;
 	if (_version < Terrain3DData::CURRENT_VERSION) {
-		LOG(WARN, "Region ", get_path(), " version ", vformat("%.3f", _version),
+		TERRAINLOG(WARN, "Region ", get_path(), " version ", vformat("%.3f", _version),
 				" will be updated to ", vformat("%.3f", Terrain3DData::CURRENT_VERSION), " upon save");
 	}
 }
@@ -32,7 +30,7 @@ void Terrain3DRegion::set_map(const MapType p_map_type, const Ref<Image> &p_imag
 			set_color_map(p_image);
 			break;
 		default:
-			LOG(ERROR, "Requested map type is invalid");
+			TERRAINLOG(ERROR, "Requested map type is invalid");
 			break;
 	}
 }
@@ -49,14 +47,14 @@ Ref<Image> Terrain3DRegion::get_map(const MapType p_map_type) const {
 			return get_color_map();
 			break;
 		default:
-			LOG(ERROR, "Requested map type is invalid");
+			TERRAINLOG(ERROR, "Requested map type is invalid");
 			return Ref<Image>();
 	}
 }
 
 void Terrain3DRegion::set_maps(const TypedArray<Image> &p_maps) {
 	if (p_maps.size() != TYPE_MAX) {
-		LOG(ERROR, "Expected ", TYPE_MAX - 1, " maps. Received ", p_maps.size());
+		TERRAINLOG(ERROR, "Expected ", TYPE_MAX - 1, " maps. Received ", p_maps.size());
 		return;
 	}
 	_region_size = 0;
@@ -66,7 +64,7 @@ void Terrain3DRegion::set_maps(const TypedArray<Image> &p_maps) {
 }
 
 TypedArray<Image> Terrain3DRegion::get_maps() const {
-	LOG(INFO, "Retrieving maps from region: ", _location);
+	TERRAINLOG(INFO, "Retrieving maps from region: ", _location);
 	TypedArray<Image> maps;
 	maps.push_back(_height_map);
 	maps.push_back(_control_map);
@@ -75,7 +73,7 @@ TypedArray<Image> Terrain3DRegion::get_maps() const {
 }
 
 void Terrain3DRegion::set_height_map(const Ref<Image> &p_map) {
-	LOG(INFO, "Setting height map for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)");
+	TERRAINLOG(INFO, "Setting height map for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)");
 	if (_region_size == 0) {
 		set_region_size((p_map.is_valid()) ? p_map->get_width() : 0);
 	}
@@ -84,7 +82,7 @@ void Terrain3DRegion::set_height_map(const Ref<Image> &p_map) {
 }
 
 void Terrain3DRegion::set_control_map(const Ref<Image> &p_map) {
-	LOG(INFO, "Setting control map for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)");
+	TERRAINLOG(INFO, "Setting control map for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)");
 	if (_region_size == 0) {
 		set_region_size((p_map.is_valid()) ? p_map->get_width() : 0);
 	}
@@ -92,20 +90,20 @@ void Terrain3DRegion::set_control_map(const Ref<Image> &p_map) {
 }
 
 void Terrain3DRegion::set_color_map(const Ref<Image> &p_map) {
-	LOG(INFO, "Setting color map for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)");
+	TERRAINLOG(INFO, "Setting color map for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)");
 	if (_region_size == 0) {
 		set_region_size((p_map.is_valid()) ? p_map->get_width() : 0);
 	}
 	_color_map = sanitize_map(TYPE_COLOR, p_map);
 	if (!_color_map->has_mipmaps()) {
-		LOG(DEBUG, "Color map does not have mipmaps. Generating");
+		TERRAINLOG(DEBUG, "Color map does not have mipmaps. Generating");
 		_color_map->generate_mipmaps();
 	}
 }
 
 void Terrain3DRegion::sanitize_maps() {
 	if (_region_size == 0) { // blank region, no set_*_map has been called
-		LOG(ERROR, "Set region_size first");
+		TERRAINLOG(ERROR, "Set region_size first");
 		return;
 	}
 	_height_map = sanitize_map(TYPE_HEIGHT, _height_map);
@@ -122,26 +120,26 @@ Ref<Image> Terrain3DRegion::sanitize_map(const MapType p_map_type, const Ref<Ima
 	if (p_map.is_valid()) {
 		if (validate_map_size(p_map)) {
 			if (p_map->get_format() == format) {
-				LOG(DEBUG, "Map type ", type_str, " correct format, size. Mipmaps: ", p_map->has_mipmaps());
+				TERRAINLOG(DEBUG, "Map type ", type_str, " correct format, size. Mipmaps: ", p_map->has_mipmaps());
 				map = p_map;
 			} else {
-				LOG(DEBUG, "Provided ", type_str, " map wrong format: ", p_map->get_format(), ". Converting copy to: ", format);
+				TERRAINLOG(DEBUG, "Provided ", type_str, " map wrong format: ", p_map->get_format(), ". Converting copy to: ", format);
 				map.instantiate();
 				map->copy_from(p_map);
 				map->convert(format);
 				if (map->get_format() != format) {
-					LOG(DEBUG, "Cannot convert image to format: ", format, ". Creating blank ");
+					TERRAINLOG(DEBUG, "Cannot convert image to format: ", format, ". Creating blank ");
 					map.unref();
 				}
 			}
 		} else {
-			LOG(DEBUG, "Provided ", type_str, " map wrong size: ", p_map->get_size(), ". Creating blank");
+			TERRAINLOG(DEBUG, "Provided ", type_str, " map wrong size: ", p_map->get_size(), ". Creating blank");
 		}
 	} else {
-		LOG(DEBUG, "No provided ", type_str, " map. Creating blank");
+		TERRAINLOG(DEBUG, "No provided ", type_str, " map. Creating blank");
 	}
 	if (map.is_null()) {
-		LOG(DEBUG, "Making new image of type: ", type_str, " and generating mipmaps: ", p_map_type == TYPE_COLOR);
+		TERRAINLOG(DEBUG, "Making new image of type: ", type_str, " and generating mipmaps: ", p_map_type == TYPE_COLOR);
 		return Util::get_filled_image(Vector2i(_region_size, _region_size), color, p_map_type == TYPE_COLOR, format);
 	} else {
 		return map;
@@ -151,30 +149,30 @@ Ref<Image> Terrain3DRegion::sanitize_map(const MapType p_map_type, const Ref<Ima
 bool Terrain3DRegion::validate_map_size(const Ref<Image> &p_map) const {
 	Vector2i region_sizev = p_map->get_size();
 	if (region_sizev.x != region_sizev.y) {
-		LOG(ERROR, "Image width doesn't match height: ", region_sizev);
+		TERRAINLOG(ERROR, "Image width doesn't match height: ", region_sizev);
 		return false;
 	}
 	if (!is_power_of_2(region_sizev.x) || !is_power_of_2(region_sizev.y)) {
-		LOG(ERROR, "Image dimensions are not a power of 2: ", region_sizev);
+		TERRAINLOG(ERROR, "Image dimensions are not a power of 2: ", region_sizev);
 		return false;
 	}
 	if (region_sizev.x < 64 || region_sizev.y > 2048) {
-		LOG(ERROR, "Image size out of bounds (64-2048): ", region_sizev);
+		TERRAINLOG(ERROR, "Image size out of bounds (64-2048): ", region_sizev);
 		return false;
 	}
 	if (_region_size == 0) {
-		LOG(ERROR, "Region size is 0, set it or set a map first");
+		TERRAINLOG(ERROR, "Region size is 0, set it or set a map first");
 		return false;
 	}
 	if (_region_size != region_sizev.x || _region_size != region_sizev.y) {
-		LOG(ERROR, "Image size doesn't match existing images in this region", region_sizev);
+		TERRAINLOG(ERROR, "Image size doesn't match existing images in this region", region_sizev);
 		return false;
 	}
 	return true;
 }
 
 void Terrain3DRegion::set_height_range(const Vector2 &p_range) {
-	LOG(INFO, vformat("%.2v", p_range));
+	TERRAINLOG(INFO, vformat("%.2v", p_range));
 	if (_height_range != p_range) {
 		// If initial value, we're loading it from disk, else mark modified
 		if (_height_range != V2_ZERO) {
@@ -189,30 +187,30 @@ void Terrain3DRegion::calc_height_range() {
 	if (_height_range != range) {
 		_height_range = range;
 		_modified = true;
-		LOG(DEBUG, "Recalculated new height range: ", _height_range, " for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)", ". Marking modified");
+		TERRAINLOG(DEBUG, "Recalculated new height range: ", _height_range, " for region: ", (_location.x != INT32_MAX) ? String(_location) : "(new)", ". Marking modified");
 	}
 }
 
 Error Terrain3DRegion::save(const String &p_path, const bool p_16_bit) {
 	// Initiate save to external file. The scene will save itself.
 	if (_location.x == INT32_MAX) {
-		LOG(ERROR, "Region has not been setup. Location is INT32_MAX. Skipping ", p_path);
+		TERRAINLOG(ERROR, "Region has not been setup. Location is INT32_MAX. Skipping ", p_path);
 	}
 	if (!_modified) {
-		LOG(DEBUG, "Region ", _location, " not modified. Skipping ", p_path);
+		TERRAINLOG(DEBUG, "Region ", _location, " not modified. Skipping ", p_path);
 		return ERR_SKIP;
 	}
 	if (p_path.is_empty() && get_path().is_empty()) {
-		LOG(ERROR, "No valid path provided");
+		TERRAINLOG(ERROR, "No valid path provided");
 		return ERR_FILE_NOT_FOUND;
 	}
 	if (!p_path.is_empty()) {
-		LOG(DEBUG, "Setting file path for region ", _location, " to ", p_path);
+		TERRAINLOG(DEBUG, "Setting file path for region ", _location, " to ", p_path);
 		take_over_path(p_path);
 		// Set region path and take over the path from any other cached resources,
 		// incuding those in the undo queue
 	}
-	LOG(MESG, "Writing", (p_16_bit) ? " 16-bit" : "", " region ", _location, " to ", get_path());
+	TERRAINLOG(MESG, "Writing", (p_16_bit) ? " 16-bit" : "", " region ", _location, " to ", get_path());
 	set_version(Terrain3DData::CURRENT_VERSION);
 	Error err = OK;
 	if (p_16_bit) {
@@ -220,16 +218,16 @@ Error Terrain3DRegion::save(const String &p_path, const bool p_16_bit) {
 		original_map.instantiate();
 		original_map->copy_from(_height_map);
 		_height_map->convert(Image::FORMAT_RH);
-		err = ResourceSaver::get_singleton()->save(this, get_path(), ResourceSaver::FLAG_COMPRESS);
+		err = ResourceSaver::save(this, get_path(), ResourceSaver::FLAG_COMPRESS);
 		_height_map = original_map;
 	} else {
-		err = ResourceSaver::get_singleton()->save(this, get_path(), ResourceSaver::FLAG_COMPRESS);
+		err = ResourceSaver::save(this, get_path(), ResourceSaver::FLAG_COMPRESS);
 	}
 	if (err == OK) {
 		_modified = false;
-		LOG(INFO, "File saved successfully");
+		TERRAINLOG(INFO, "File saved successfully");
 	} else {
-		LOG(ERROR, "Cannot save region file: ", get_path(), ". Error code: ", ERROR, ". Look up @GlobalScope Error enum in the Godot docs");
+		TERRAINLOG(ERROR, "Cannot save region file: ", get_path(), ". Error code: ", ERROR, ". Look up @GlobalScope Error enum in the Godot docs");
 	}
 	return err;
 }
@@ -238,11 +236,11 @@ void Terrain3DRegion::set_location(const Vector2i &p_location) {
 	// In the future anywhere they want to put the location might be fine, but because of region_map
 	// We have a limitation of 16x16 and eventually 45x45.
 	if (Terrain3DData::get_region_map_index(p_location) < 0) {
-		LOG(ERROR, "Location ", p_location, " out of bounds. Max: ",
+		TERRAINLOG(ERROR, "Location ", p_location, " out of bounds. Max: ",
 				-Terrain3DData::REGION_MAP_SIZE / 2, " to ", Terrain3DData::REGION_MAP_SIZE / 2 - 1);
 		return;
 	}
-	LOG(INFO, "Set location: ", p_location);
+	TERRAINLOG(INFO, "Set location: ", p_location);
 	_location = p_location;
 }
 
@@ -360,7 +358,7 @@ void Terrain3DRegion::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_data", "data"), &Terrain3DRegion::set_data);
 	ClassDB::bind_method(D_METHOD("get_data"), &Terrain3DRegion::get_data);
-	ClassDB::bind_method(D_METHOD("duplicate", "deep"), &Terrain3DRegion::duplicate, DEFVAL(false));
+	// ClassDB::bind_method(D_METHOD("duplicate", "deep"), &Terrain3DRegion::duplicate, DEFVAL(false));
 
 	int ro_flags = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY;
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "version", PROPERTY_HINT_NONE, "", ro_flags), "set_version", "get_version");

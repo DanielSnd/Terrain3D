@@ -3,8 +3,6 @@
 #ifndef LOGGER_CLASS_H
 #define LOGGER_CLASS_H
 
-#include <godot_cpp/variant/utility_functions.hpp>
-
 #include "terrain_3d.h"
 
 using namespace godot;
@@ -27,14 +25,14 @@ using namespace godot;
 #define DEBUG 2
 #define EXTREME 3
 #ifdef DEBUG_ENABLED
-#define LOG(level, ...)                                                              \
-	if (level == ERROR)                                                              \
-		UtilityFunctions::push_error(__class__, ":", __func__, ": ", __VA_ARGS__);   \
-	else if (level == WARN)                                                          \
-		UtilityFunctions::push_warning(__class__, ":", __func__, ": ", __VA_ARGS__); \
-	else if (Terrain3D::debug_level >= level)                                        \
-		UtilityFunctions::print(__class__, ":", __func__, ": ", __VA_ARGS__);
+#define TERRAINLOG(level, ...)                                                              \
+if (level == ERROR)                                                              \
+print_line("ERROR",__class__, ":", __func__, ": ", __VA_ARGS__);   \
+else if (level == WARN)                                                          \
+print_line("WARNING",__class__, ":", __func__, ": ", __VA_ARGS__); \
+else if (Terrain3D::debug_level >= level)                                        \
+print_line(__class__, ":", __func__, ": ", __VA_ARGS__);
 #else
-#define LOG(...)
+#define TERRAINLOG(...)
 #endif
 #endif // LOGGER_CLASS_H
