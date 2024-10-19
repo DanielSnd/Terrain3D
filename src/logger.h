@@ -27,11 +27,11 @@ using namespace godot;
 #ifdef DEBUG_ENABLED
 #define TERRAINLOG(level, ...)                                                              \
 if (level == ERROR)                                                              \
-print_line("ERROR",__class__, ":", __func__, ": ", __VA_ARGS__);   \
+print_line("ERROR", __VA_ARGS__);   \
 else if (level == WARN)                                                          \
-print_line("WARNING",__class__, ":", __func__, ": ", __VA_ARGS__); \
+print_line("WARNING", __VA_ARGS__); \
 else if (Terrain3D::debug_level >= level)                                        \
-print_line(__class__, ":", __func__, ": ", __VA_ARGS__);
+print_line(__VA_ARGS__);
 #else
 #define TERRAINLOG(...)
 #endif
