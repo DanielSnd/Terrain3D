@@ -3,8 +3,6 @@
 #ifndef GEOCLIPMAP_CLASS_H
 #define GEOCLIPMAP_CLASS_H
 
-#include <godot_cpp/templates/vector.hpp>
-
 #include "constants.h"
 
 using namespace godot;

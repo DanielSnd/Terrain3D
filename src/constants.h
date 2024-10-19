@@ -3,11 +3,8 @@
 #ifndef CONSTANTS_CLASS_H
 #define CONSTANTS_CLASS_H
 
-using namespace godot;
-
 // Constants
 
-#define RS RenderingServer::get_singleton()
 #define IS_EDITOR Engine::get_singleton()->is_editor_hint()
 
 #define COLOR_NAN Color(NAN, NAN, NAN, NAN)
@@ -17,11 +14,6 @@ using namespace godot;
 #define COLOR_CHECKED Color(1.f, 1.f, 1.0f, -1.0f)
 #define COLOR_NORMAL Color(0.5f, 0.5f, 1.0f, 1.0f)
 #define COLOR_CONTROL Color(as_float(enc_auto(true)), 0.f, 0.f, 1.0f)
-
-#ifndef FLT_MAX
-// For consistency between MSVC, gcc, clang
-#define FLT_MAX __FLT_MAX__
-#endif
 
 #define V2(x) Vector2(x, x)
 #define V2_ZERO Vector2(0.f, 0.f)
@@ -50,7 +42,7 @@ using namespace godot;
 
 #define IS_INIT_MESG(mesg, ret) \
 	if (_terrain == nullptr) {  \
-		LOG(ERROR, mesg);       \
+		TERRAINLOG(ERROR, mesg);       \
 		return ret;             \
 	}
 
@@ -61,7 +53,7 @@ using namespace godot;
 
 #define IS_INIT_COND_MESG(cond, mesg, ret) \
 	if (_terrain == nullptr || cond) {     \
-		LOG(ERROR, mesg);                  \
+		TERRAINLOG(ERROR, mesg);                  \
 		return ret;                        \
 	}
 
@@ -72,7 +64,7 @@ using namespace godot;
 
 #define IS_INSTANCER_INIT_MESG(mesg, ret)                              \
 	if (_terrain == nullptr || _terrain->get_instancer() == nullptr) { \
-		LOG(ERROR, mesg);                                              \
+		TERRAINLOG(ERROR, mesg);                                              \
 		return ret;                                                    \
 	}
 
@@ -83,7 +75,7 @@ using namespace godot;
 
 #define IS_DATA_INIT_MESG(mesg, ret)                              \
 	if (_terrain == nullptr || _terrain->get_data() == nullptr) { \
-		LOG(ERROR, mesg);                                         \
+		TERRAINLOG(ERROR, mesg);                                         \
 		return ret;                                               \
 	}
 

@@ -3,8 +3,6 @@
 #ifndef TERRAIN3D_MATERIAL_CLASS_H
 #define TERRAIN3D_MATERIAL_CLASS_H
 
-#include <godot_cpp/classes/shader.hpp>
-
 #include "constants.h"
 #include "generated_texture.h"
 

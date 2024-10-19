@@ -3,9 +3,6 @@
 #ifndef TERRAIN3D_STORAGE_CLASS_H
 #define TERRAIN3D_STORAGE_CLASS_H
 
-#include <godot_cpp/classes/resource_loader.hpp>
-#include <godot_cpp/classes/shader.hpp>
-
 #include "constants.h"
 #include "generated_texture.h"
 #include "terrain_3d_util.h"
