@@ -11,7 +11,6 @@
 #endif
 #include "terrain_3d_instancer.h"
 #include "terrain_3d_material.h"
-#include "terrain_3d_storage.h"
 #include "editor/plugins/editor_plugin.h"
 #include "scene/3d/mesh_instance_3d.h"
 
