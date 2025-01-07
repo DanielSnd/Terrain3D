@@ -266,7 +266,7 @@ inline void Terrain3DData::set_control(const Vector3 &p_global_position, const u
 
 inline uint32_t Terrain3DData::get_control(const Vector3 &p_global_position) const {
 	real_t val = get_pixel(TYPE_CONTROL, p_global_position).r;
-	return (std::isnan(val)) ? UINT32_MAX : as_uint(val);
+	return (Math::is_nan(val)) ? UINT32_MAX : as_uint(val);
 }
 
 inline void Terrain3DData::set_control_base_id(const Vector3 &p_global_position, const uint8_t p_base) {
@@ -320,14 +320,14 @@ inline real_t Terrain3DData::get_control_angle(const Vector3 &p_global_position)
 // Expects scale as a percentage modifier
 inline void Terrain3DData::set_control_scale(const Vector3 &p_global_position, const real_t p_scale) {
 	uint32_t control = get_control(p_global_position);
-	std::array<uint32_t, 8> scale_align = { 5, 6, 7, 0, 1, 2, 3, 4 };
+	const uint32_t scale_align[8] = { 5, 6, 7, 0, 1, 2, 3, 4 };
 	uint8_t uvscale = scale_align[uint8_t(CLAMP(Math::round((p_scale + 60.f) / 20.f), 0.f, 7.f))];
 	set_control(p_global_position, (control & ~(0x7 << 7)) | enc_uv_scale(uvscale));
 }
 
 inline real_t Terrain3DData::get_control_scale(const Vector3 &p_global_position) const {
 	uint32_t control = get_control(p_global_position);
-	std::array<real_t, 8> scale_values = { 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, -60.0f, -40.0f, -20.0f };
+	const real_t scale_values[8] = { 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, -60.0f, -40.0f, -20.0f };
 	real_t scale = scale_values[get_uv_scale(control)]; //select from array UI return values
 	return control == UINT32_MAX ? NAN : scale;
 }

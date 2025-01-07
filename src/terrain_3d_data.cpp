@@ -687,7 +687,7 @@ bool Terrain3DData::is_in_slope(const Vector3 &p_global_position, const Vector2 
 			// Round to nearest vertex
 			Vector3 pos_round = pos.snapped(Vector3(step, 0.f, step));
 			real_t height = get_pixel(TYPE_HEIGHT, pos_round).r;
-			return std::isnan(height) ? 0.f : height;
+			return Math::is_nan(height) ? 0.f : height;
 		};
 
 		const real_t vertex_spacing = _terrain->get_vertex_spacing();

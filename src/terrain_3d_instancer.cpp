@@ -76,7 +76,7 @@ void Terrain3DInstancer::_update_mmis(const Vector2i &p_region_loc, const int p_
 
 				// Create MMI container if needed
 				String rname("Region" + Util::location_to_string(region_loc));
-				if (_mmi_containers.count(region_loc) == 0) {
+				if (!_mmi_containers.has(region_loc)) {
 					TERRAINLOG(DEBUG, "Creating new region MMI container Terrain3D/MMI/", rname);
 					Node3D *node = memnew(Node3D);
 					node->set_name(rname);
@@ -92,7 +92,7 @@ void Terrain3DInstancer::_update_mmis(const Vector2i &p_region_loc, const int p_
 				CellMMIDict &cell_mmi_dict = mesh_mmi_dict[mesh_key];
 
 				MultiMeshInstance3D *mmi;
-				if (cell_mmi_dict.count(cell) == 0) {
+				if (!cell_mmi_dict.has(cell)) {
 					mmi = memnew(MultiMeshInstance3D);
 					TERRAINLOG(DEBUG, "No MMI found, Created new MultiMeshInstance3D: ", uint64_t(mmi));
 					// Node name is MMI3D_Cell##_##_Mesh#
@@ -190,19 +190,19 @@ void Terrain3DInstancer::_update_vertex_spacing(const real_t p_vertex_spacing) {
 }
 
 void Terrain3DInstancer::_destroy_mmi_by_cell(const Vector2i &p_region_loc, const int p_mesh_id, const Vector2i p_cell) {
-	if (_mmi_nodes.count(p_region_loc) == 0) {
+	if (!_mmi_nodes.has(p_region_loc)) {
 		return;
 	}
 	MeshMMIDict &mesh_mmi_dict = _mmi_nodes[p_region_loc];
 
 	// TODO Hardcoded LOD0, loop through lods
 	Vector2i mesh_key(p_mesh_id, 0);
-	if (mesh_mmi_dict.count(mesh_key) == 0) {
+	if (!mesh_mmi_dict.has(mesh_key)) {
 		return;
 	}
 	CellMMIDict &cell_mmi_dict = mesh_mmi_dict[mesh_key];
 
-	if (cell_mmi_dict.count(p_cell) == 0) {
+	if (!cell_mmi_dict.has(p_cell)) {
 		return;
 	}
 	MultiMeshInstance3D *mmi = cell_mmi_dict[p_cell];
@@ -211,15 +211,15 @@ void Terrain3DInstancer::_destroy_mmi_by_cell(const Vector2i &p_region_loc, cons
 	remove_from_tree(mmi);
 	memdelete_safely(mmi);
 
-	if (cell_mmi_dict.empty()) {
+	if (cell_mmi_dict.is_empty()) {
 		TERRAINLOG(EXTREME, "Removing mesh ", mesh_key, " from cell MMI dictionary");
 		mesh_mmi_dict.erase(mesh_key);
 	}
 
-	if (mesh_mmi_dict.empty()) {
+	if (mesh_mmi_dict.is_empty()) {
 		TERRAINLOG(EXTREME, "Removing region ", p_region_loc, " from mesh MMI dictionary");
 		_mmi_nodes.erase(p_region_loc);
-		if (_mmi_containers.count(p_region_loc) > 0) {
+		if (_mmi_containers.has(p_region_loc)) {
 			Node *node = _mmi_containers[p_region_loc];
 			if (node && node->get_child_count() == 0) {
 				TERRAINLOG(EXTREME, "Removing ", node->get_name());
@@ -233,7 +233,7 @@ void Terrain3DInstancer::_destroy_mmi_by_cell(const Vector2i &p_region_loc, cons
 
 void Terrain3DInstancer::_destroy_mmi_by_location(const Vector2i &p_region_loc, const int p_mesh_id) {
 	TERRAINLOG(DEBUG, "Deleting all MMIs in region: ", p_region_loc, " for mesh_id: ", p_mesh_id);
-	if (_mmi_nodes.count(p_region_loc) == 0) {
+	if (!_mmi_nodes.has(p_region_loc)) {
 		return;
 	}
 	MeshMMIDict &mesh_mmi_dict = _mmi_nodes[p_region_loc];
@@ -247,7 +247,7 @@ void Terrain3DInstancer::_destroy_mmi_by_location(const Vector2i &p_region_loc, 
 	keys.resize(cell_mmi_dict.size());
 	int i = 0;
 	for (auto &it : cell_mmi_dict) {
-		keys.write[i] = it.first;
+		keys.write[i] = it.key;
 		i++;
 	}
 	for (const Vector2i &cell : keys) {
@@ -326,7 +326,7 @@ void Terrain3DInstancer::destroy() {
 	keys.resize(_mmi_nodes.size());
 	int i = 0;
 	for (auto &it : _mmi_nodes) {
-		keys.write[i] = it.first;
+		keys.write[i] = it.key;
 		i++;
 	}
 	int mesh_count = _terrain->get_assets()->get_mesh_count();
@@ -421,7 +421,7 @@ void Terrain3DInstancer::add_instances(const Vector3 &p_global_position, const D
 		Vector3 position = p_global_position + rand_vec;
 		// Get height, but skip holes
 		real_t height = data->get_height(position);
-		if (std::isnan(height)) {
+		if (Math::is_nan(height)) {
 			continue;
 		} else {
 			position.y = height;
@@ -434,7 +434,7 @@ void Terrain3DInstancer::add_instances(const Vector3 &p_global_position, const D
 		Vector3 normal = Vector3(0.f, 1.f, 0.f);
 		if (align_to_normal) {
 			normal = data->get_normal(position);
-			if (std::isnan(normal.x)) {
+			if (Math::is_nan(normal.x)) {
 				normal = Vector3(0.f, 1.f, 0.f);
 			} else {
 				normal = normal.normalized();
@@ -840,7 +840,7 @@ void Terrain3DInstancer::update_transforms(const AABB &p_aabb) {
 						t.origin -= height_offset;
 						real_t height = _terrain->get_data()->get_height(global_origin);
 						// If the new height is a nan due to creating a hole, remove the instance
-						if (std::isnan(height)) {
+						if (Math::is_nan(height)) {
 							continue;
 						}
 						t.origin.y = height;
@@ -1019,17 +1019,17 @@ void Terrain3DInstancer::dump_mmis() {
 	TERRAINLOG(WARN, "Dumping MMI tree and node containers");
 	TERRAINLOG(MESG, "_mmi_containers size: ", int(_mmi_containers.size()));
 	for (auto &it : _mmi_containers) {
-		TERRAINLOG(MESG, "_mmi_containers region: ", it.first, ", node ptr: ", uint64_t(it.second));
+		TERRAINLOG(MESG, "_mmi_containers region: ", it.key, ", node ptr: ", uint64_t(it.value));
 	}
 	TERRAINLOG(MESG, "_mmi tree: ");
 	_terrain->get_mmi_parent()->print_tree();
 	TERRAINLOG(MESG, "_mmi_nodes size: ", int(_mmi_nodes.size()));
 	for (auto &i : _mmi_nodes) {
-		TERRAINLOG(MESG, "_mmi_nodes region: ", i.first, ", dict ptr: ", uint64_t(&i.second));
-		for (auto &j : i.second) {
-			TERRAINLOG(MESG, "mesh_mmi_dict mesh: ", j.first, ", dict ptr: ", uint64_t(&j.second));
-			for (auto &k : j.second) {
-				TERRAINLOG(MESG, "cell_mmi_dict cell: ", k.first, ", mmi ptr: ", uint64_t(k.second));
+		TERRAINLOG(MESG, "_mmi_nodes region: ", i.key, ", dict ptr: ", uint64_t(&i.value));
+		for (auto &j : i.value) {
+			TERRAINLOG(MESG, "mesh_mmi_dict mesh: ", j.key, ", dict ptr: ", uint64_t(&j.value));
+			for (auto &k : j.value) {
+				TERRAINLOG(MESG, "cell_mmi_dict cell: ", k.key, ", mmi ptr: ", uint64_t(k.value));
 			}
 		}
 	}

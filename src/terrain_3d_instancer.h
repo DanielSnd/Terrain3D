@@ -8,8 +8,6 @@
 #include "scene/resources/multimesh.h"
 #include "terrain_3d_region.h"
 
-using namespace godot;
-
 class Terrain3D;
 class Terrain3DAssets;
 
@@ -24,9 +22,9 @@ public: // Constants
 // Global Types
 
 struct Vector2iHash {
-	uint32_t operator()(const Vector2i &v) const {
-		uint32_t hash = hash_djb2_one_32(v.x);
-		return hash_djb2_one_32(v.y, hash);
+	_FORCE_INLINE_ static uint32_t hash(const Vector2i &p_vec) {
+		uint32_t hash = hash_djb2_one_32(p_vec.x);
+		return hash_djb2_one_32(p_vec.y, hash);
 	}
 };
 
@@ -38,13 +36,13 @@ private:
 
 	// MMI Objects attached to tree, freed in destructor, stored as
 	// _mmi_nodes{region_loc} -> mesh{v2i(mesh_id,lod)} -> cell{v2i} -> MultiMeshInstance3D
-	typedef std::unordered_map<Vector2i, MultiMeshInstance3D *, Vector2iHash> CellMMIDict;
-	typedef std::unordered_map<Vector2i, CellMMIDict, Vector2iHash> MeshMMIDict;
-	std::unordered_map<Vector2i, MeshMMIDict, Vector2iHash> _mmi_nodes;
+	typedef HashMap<Vector2i, MultiMeshInstance3D *, Vector2iHash> CellMMIDict;
+	typedef HashMap<Vector2i, CellMMIDict, Vector2iHash> MeshMMIDict;
+	HashMap<Vector2i, MeshMMIDict, Vector2iHash> _mmi_nodes;
 
 	// Region MMI containers named Terrain3D/MMI/Region* are stored here as
 	// _mmi_containers{region_loc} -> Node3D
-	std::unordered_map<Vector2i, Node3D *, Vector2iHash> _mmi_containers;
+	HashMap<Vector2i, Node3D *, Vector2iHash> _mmi_containers;
 
 	uint32_t _density_counter = 0;
 	uint32_t _get_density_count(const real_t p_density);

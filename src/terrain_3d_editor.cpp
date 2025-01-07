@@ -217,14 +217,14 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 			// Start brushing on the map
 			real_t brush_alpha = brush_image->get_pixelv(brush_pixel_position).r;
 			brush_alpha = real_t(Math::pow(double(brush_alpha), double(gamma)));
-			brush_alpha = std::isnan(brush_alpha) || std::isnan(brush_alpha) ? 0.f : CLAMP(brush_alpha, 0.f, 1.f);
+			brush_alpha = Math::is_nan(brush_alpha) || Math::is_nan(brush_alpha) ? 0.f : CLAMP(brush_alpha, 0.f, 1.f);
 			Color src = map->get_pixelv(map_pixel_position);
 			Color dest = src;
 
 			if (map_type == TYPE_HEIGHT) {
 				real_t srcf = src.r;
 				// In case data in existing map has nan or inf saved, check, and reset to real number if required.
-				srcf = std::isnan(srcf) || std::isnan(srcf) ? 0.f : srcf;
+				srcf = Math::is_nan(srcf) || Math::is_nan(srcf) ? 0.f : srcf;
 				real_t destf = srcf;
 
 				switch (_operation) {
@@ -232,7 +232,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 						if (_tool == HEIGHT) {
 							// Height
 							destf = Math::lerp(srcf, height, CLAMP(brush_alpha * strength, 0.f, 1.f));
-						} else if (modifier_alt && !std::isnan(p_global_position.y)) {
+						} else if (modifier_alt && !Math::is_nan(p_global_position.y)) {
 							// Lift troughs
 							real_t brush_center_y = p_global_position.y + brush_alpha * strength;
 							destf = CLAMP(brush_center_y, srcf, srcf + brush_alpha * strength);
@@ -246,7 +246,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 						if (_tool == HEIGHT) {
 							// Height at 0
 							destf = Math::lerp(srcf, 0.f, CLAMP(brush_alpha * strength, 0.f, 1.f));
-						} else if (modifier_alt && !std::isnan(p_global_position.y)) {
+						} else if (modifier_alt && !Math::is_nan(p_global_position.y)) {
 							// Flatten peaks
 							real_t brush_center_y = p_global_position.y - brush_alpha * strength;
 							destf = CLAMP(brush_center_y, srcf - brush_alpha * strength, srcf);
@@ -262,19 +262,19 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 						Vector3 down_position = brush_global_position - Vector3(0.f, 0.f, vertex_spacing);
 						Vector3 up_position = brush_global_position + Vector3(0.f, 0.f, vertex_spacing);
 						real_t left = data->get_pixel(map_type, left_position).r;
-						if (std::isnan(left)) {
+						if (Math::is_nan(left)) {
 							left = 0.f;
 						}
 						real_t right = data->get_pixel(map_type, right_position).r;
-						if (std::isnan(right)) {
+						if (Math::is_nan(right)) {
 							right = 0.f;
 						}
 						real_t up = data->get_pixel(map_type, up_position).r;
-						if (std::isnan(up)) {
+						if (Math::is_nan(up)) {
 							up = 0.f;
 						}
 						real_t down = data->get_pixel(map_type, down_position).r;
-						if (std::isnan(down)) {
+						if (Math::is_nan(down)) {
 							down = 0.f;
 						}
 						real_t avg = (srcf + left + right + up + down) * 0.2f;
@@ -327,7 +327,8 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 				bool autoshader = is_auto(src.r);
 				// Lookup to shift values saved to control map so that 0 (default) is the first entry
 				// Shader scale array is aligned to match this.
-				std::array<uint32_t, 8> scale_align = { 5, 6, 7, 0, 1, 2, 3, 4 };
+				// std::array<uint32_t, 8> scale_align = { 5, 6, 7, 0, 1, 2, 3, 4 };
+				const uint32_t scale_align[8] = { 5, 6, 7, 0, 1, 2, 3, 4 };
 
 				switch (_tool) {
 					case TEXTURE: {
