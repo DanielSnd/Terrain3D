@@ -262,7 +262,7 @@ void Terrain3DAssets::_update_texture_files() {
 					warn_compatibility_decompress = true;
 					img->decompress();
 				}
-				print_line(DEBUG, "ID ", i, " albedo texture is valid. Format: ", img->get_format());
+				TERRAINLOG(DEBUG, "ID ", i, " albedo texture is valid. Format: ", img->get_format());
 			}
 			albedo_texture_array.push_back(img);
 		}
