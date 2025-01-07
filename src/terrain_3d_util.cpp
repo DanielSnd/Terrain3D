@@ -1,17 +1,15 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include <godot_cpp/classes/engine.hpp>
-#include <godot_cpp/classes/file_access.hpp>
-
 #include "logger.h"
 #include "terrain_3d_util.h"
+#include "terrain_3d_region.h"
 
 ///////////////////////////
 // Public Functions
 ///////////////////////////
 
 void Terrain3DUtil::print_arr(const String &p_name, const Array &p_arr, const int p_level) {
-	LOG(p_level, "Array[", p_arr.size(), "]: ", p_name);
+	TERRAINLOG(p_level, "Array[", p_arr.size(), "]: ", p_name);
 	for (int i = 0; i < p_arr.size(); i++) {
 		Variant var = p_arr[i];
 		switch (var.get_type()) {
@@ -25,11 +23,11 @@ void Terrain3DUtil::print_arr(const String &p_name, const Array &p_arr, const in
 			}
 			case Variant::OBJECT: {
 				String inst = "Object#" + String::num_uint64(cast_to<Object>(var)->get_instance_id());
-				LOG(p_level, i, ": ", inst);
+				TERRAINLOG(p_level, i, ": ", inst);
 				break;
 			}
 			default: {
-				LOG(p_level, i, ": ", p_arr[i]);
+				TERRAINLOG(p_level, i, ": ", p_arr[i]);
 				break;
 			}
 		}
@@ -37,7 +35,7 @@ void Terrain3DUtil::print_arr(const String &p_name, const Array &p_arr, const in
 }
 
 void Terrain3DUtil::print_dict(const String &p_name, const Dictionary &p_dict, const int p_level) {
-	LOG(p_level, "Dictionary: ", p_name);
+	TERRAINLOG(p_level, "Dictionary: ", p_name);
 	Array keys = p_dict.keys();
 	for (int i = 0; i < keys.size(); i++) {
 		Variant var = p_dict[keys[i]];
@@ -52,11 +50,11 @@ void Terrain3DUtil::print_dict(const String &p_name, const Dictionary &p_dict, c
 			}
 			case Variant::OBJECT: {
 				String inst = "Object#" + String::num_uint64(cast_to<Object>(var)->get_instance_id());
-				LOG(p_level, "\"", keys[i], "\": ", inst);
+				TERRAINLOG(p_level, "\"", keys[i], "\": ", inst);
 				break;
 			}
 			default: {
-				LOG(p_level, "\"", keys[i], "\": Value: ", var);
+				TERRAINLOG(p_level, "\"", keys[i], "\": Value: ", var);
 				break;
 			}
 		}
@@ -64,14 +62,14 @@ void Terrain3DUtil::print_dict(const String &p_name, const Dictionary &p_dict, c
 }
 
 void Terrain3DUtil::dump_gentex(const GeneratedTexture p_gen, const String &p_name, const int p_level) {
-	LOG(p_level, "Generated ", p_name, " RID: ", p_gen.get_rid(), ", dirty: ", p_gen.is_dirty(), ", image: ", p_gen.get_image());
+	TERRAINLOG(p_level, "Generated ", p_name, " RID: ", p_gen.get_rid(), ", dirty: ", p_gen.is_dirty(), ", image: ", p_gen.get_image());
 }
 
 void Terrain3DUtil::dump_maps(const TypedArray<Image> &p_maps, const String &p_name) {
-	LOG(DEBUG, "Dumping ", p_name, " map array. Size: ", p_maps.size());
+	TERRAINLOG(DEBUG, "Dumping ", p_name, " map array. Size: ", p_maps.size());
 	for (int i = 0; i < p_maps.size(); i++) {
 		Ref<Image> img = p_maps[i];
-		LOG(DEBUG, "[", i, "]: Map size: ", img->get_size(), " format: ", img->get_format(), " ", img);
+		TERRAINLOG(DEBUG, "[", i, "]: Map size: ", img->get_size(), " format: ", img->get_format(), " ", img);
 	}
 }
 
@@ -86,7 +84,7 @@ Vector2i Terrain3DUtil::string_to_location(const String &p_string) {
 	String x_str = p_string.left(3).replace("_", "");
 	String y_str = p_string.right(3).replace("_", "");
 	if (!x_str.is_valid_int() || !y_str.is_valid_int()) {
-		LOG(ERROR, "Malformed string '", p_string, "'. Result: ", x_str, ", ", y_str);
+		TERRAINLOG(ERROR, "Malformed string '", p_string, "'. Result: ", x_str, ", ", y_str);
 		return V2I_MAX;
 	}
 	return Vector2i(x_str.to_int(), y_str.to_int());
@@ -127,10 +125,10 @@ Ref<Image> Terrain3DUtil::black_to_alpha(const Ref<Image> &p_image) {
  */
 Vector2 Terrain3DUtil::get_min_max(const Ref<Image> &p_image) {
 	if (p_image.is_null()) {
-		LOG(ERROR, "Provided image is not valid. Nothing to analyze");
+		TERRAINLOG(ERROR, "Provided image is not valid. Nothing to analyze");
 		return Vector2(INFINITY, INFINITY);
 	} else if (p_image->is_empty()) {
-		LOG(ERROR, "Provided image is empty. Nothing to analyze");
+		TERRAINLOG(ERROR, "Provided image is empty. Nothing to analyze");
 		return Vector2(INFINITY, INFINITY);
 	}
 
@@ -148,7 +146,7 @@ Vector2 Terrain3DUtil::get_min_max(const Ref<Image> &p_image) {
 		}
 	}
 
-	LOG(INFO, "Calculating minimum and maximum values of the image: ", min_max);
+	TERRAINLOG(INFO, "Calculating minimum and maximum values of the image: ", min_max);
 	return min_max;
 }
 
@@ -158,15 +156,15 @@ Vector2 Terrain3DUtil::get_min_max(const Ref<Image> &p_image) {
  */
 Ref<Image> Terrain3DUtil::get_thumbnail(const Ref<Image> &p_image, const Vector2i &p_size) {
 	if (p_image.is_null()) {
-		LOG(ERROR, "Provided image is not valid. Nothing to process");
+		TERRAINLOG(ERROR, "Provided image is not valid. Nothing to process");
 		return Ref<Image>();
 	} else if (p_image->is_empty()) {
-		LOG(ERROR, "Provided image is empty. Nothing to process");
+		TERRAINLOG(ERROR, "Provided image is empty. Nothing to process");
 		return Ref<Image>();
 	}
 	Vector2i size = Vector2i(CLAMP(p_size.x, 8, 16384), CLAMP(p_size.y, 8, 16384));
 
-	LOG(INFO, "Drawing a thumbnail sized: ", size);
+	TERRAINLOG(INFO, "Drawing a thumbnail sized: ", size);
 	// Create a temporary work image scaled to desired width
 	Ref<Image> img;
 	img.instantiate();
@@ -282,23 +280,33 @@ Ref<Image> Terrain3DUtil::get_filled_image(const Vector2i &p_size, const Color &
  */
 Ref<Image> Terrain3DUtil::load_image(const String &p_file_name, const int p_cache_mode, const Vector2 &p_r16_height_range, const Vector2i &p_r16_size) {
 	if (p_file_name.is_empty()) {
-		LOG(ERROR, "No file specified. Nothing imported");
+		TERRAINLOG(ERROR, "No file specified. Nothing imported");
 		return Ref<Image>();
 	}
-	if (!FileAccess::file_exists(p_file_name)) {
-		LOG(ERROR, "File ", p_file_name, " does not exist. Nothing to import");
+	if (!FileAccess::exists(p_file_name)) {
+		TERRAINLOG(ERROR, "File ", p_file_name, " does not exist. Nothing to import");
 		return Ref<Image>();
 	}
 
 	// Load file based on extension
 	Ref<Image> img;
-	LOG(INFO, "Attempting to load: ", p_file_name);
+	TERRAINLOG(INFO, "Attempting to load: ", p_file_name);
 	String ext = p_file_name.get_extension().to_lower();
-	PackedStringArray imgloader_extensions = PackedStringArray(Array::make("bmp", "dds", "exr", "hdr", "jpg", "jpeg", "png", "tga", "svg", "webp"));
+	Array string_array;
+	string_array.push_back("bmp");
+	string_array.push_back("dds");
+	string_array.push_back("exr");
+	string_array.push_back("hdr");
+	string_array.push_back("jpg");
+	string_array.push_back("jpeg");
+	string_array.push_back("png");
+	string_array.push_back("tga");
+	string_array.push_back("svg");
+	string_array.push_back("webp");
 
 	// If R16 integer format (read/writeable by Krita)
 	if (ext == "r16" || ext == "raw") {
-		LOG(DEBUG, "Loading file as an r16");
+		TERRAINLOG(DEBUG, "Loading file as an r16");
 		Ref<FileAccess> file = FileAccess::open(p_file_name, FileAccess::READ);
 		// If p_size is zero, assume square and try to auto detect size
 		Vector2i r16_size = p_r16_size;
@@ -307,7 +315,7 @@ Ref<Image> Terrain3DUtil::load_image(const String &p_file_name, const int p_cach
 			int fsize = file->get_position();
 			int fwidth = sqrt(fsize / 2);
 			r16_size = Vector2i(fwidth, fwidth);
-			LOG(DEBUG, "Total file size is: ", fsize, " calculated width: ", fwidth, " dimensions: ", r16_size);
+			TERRAINLOG(DEBUG, "Total file size is: ", fsize, " calculated width: ", fwidth, " dimensions: ", r16_size);
 			file->seek(0);
 		}
 		img = Image::create_empty(r16_size.x, r16_size.y, false, FORMAT[TYPE_HEIGHT]);
@@ -320,25 +328,25 @@ Ref<Image> Terrain3DUtil::load_image(const String &p_file_name, const int p_cach
 		}
 
 		// If an Image extension, use Image loader
-	} else if (imgloader_extensions.has(ext)) {
-		LOG(DEBUG, "ImageFormatLoader loading recognized file type: ", ext);
+	} else if (string_array.has(ext)) {
+		TERRAINLOG(DEBUG, "ImageFormatLoader loading recognized file type: ", ext);
 		img = Image::load_from_file(p_file_name);
 
 		// Else, see if Godot's resource loader will read it as an image: RES, TRES, etc
 	} else {
-		LOG(DEBUG, "Loading file as a resource");
-		img = ResourceLoader::get_singleton()->load(p_file_name, "", static_cast<ResourceLoader::CacheMode>(p_cache_mode));
+		TERRAINLOG(DEBUG, "Loading file as a resource");
+		img = ResourceLoader::load(p_file_name, "", static_cast<ResourceFormatLoader::CacheMode>(p_cache_mode));
 	}
 
 	if (!img.is_valid()) {
-		LOG(ERROR, "File", p_file_name, " cannot be loaded");
+		TERRAINLOG(ERROR, "File", p_file_name, " cannot be loaded");
 		return Ref<Image>();
 	}
 	if (img->is_empty()) {
-		LOG(ERROR, "File", p_file_name, " is empty");
+		TERRAINLOG(ERROR, "File", p_file_name, " is empty");
 		return Ref<Image>();
 	}
-	LOG(DEBUG, "Loaded Image size: ", img->get_size(), " format: ", img->get_format());
+	TERRAINLOG(DEBUG, "Loaded Image size: ", img->get_size(), " format: ", img->get_format());
 	return img;
 }
 
@@ -349,23 +357,23 @@ Ref<Image> Terrain3DUtil::load_image(const String &p_file_name, const int p_cach
 Ref<Image> Terrain3DUtil::pack_image(const Ref<Image> &p_src_rgb, const Ref<Image> &p_src_a,
 		const bool p_invert_green, const bool p_invert_alpha, const int p_alpha_channel) {
 	if (!p_src_rgb.is_valid() || !p_src_a.is_valid()) {
-		LOG(ERROR, "Provided images are not valid. Cannot pack");
+		TERRAINLOG(ERROR, "Provided images are not valid. Cannot pack");
 		return Ref<Image>();
 	}
 	if (p_src_rgb->get_size() != p_src_a->get_size()) {
-		LOG(ERROR, "Provided images are not the same size. Cannot pack");
+		TERRAINLOG(ERROR, "Provided images are not the same size. Cannot pack");
 		return Ref<Image>();
 	}
 	if (p_src_rgb->is_empty() || p_src_a->is_empty()) {
-		LOG(ERROR, "Provided images are empty. Cannot pack");
+		TERRAINLOG(ERROR, "Provided images are empty. Cannot pack");
 		return Ref<Image>();
 	}
 	if (p_alpha_channel < 0 || p_alpha_channel > 3) {
-		LOG(ERROR, "Source Channel of Height/Roughness invalid. Cannot Pack")
+		TERRAINLOG(ERROR, "Source Channel of Height/Roughness invalid. Cannot Pack")
 		return Ref<Image>();
 	}
 	Ref<Image> dst = Image::create_empty(p_src_rgb->get_width(), p_src_rgb->get_height(), false, Image::FORMAT_RGBA8);
-	LOG(INFO, "Creating image from source RGB + source channel images");
+	TERRAINLOG(INFO, "Creating image from source RGB + source channel images");
 	for (int y = 0; y < p_src_rgb->get_height(); y++) {
 		for (int x = 0; x < p_src_rgb->get_width(); x++) {
 			Color col = p_src_rgb->get_pixel(x, y);
@@ -385,11 +393,11 @@ Ref<Image> Terrain3DUtil::pack_image(const Ref<Image> &p_src_rgb, const Ref<Imag
 // From source RGB, create a new L image that is scaled to use full 0 - 1 range.
 Ref<Image> Terrain3DUtil::luminance_to_height(const Ref<Image> &p_src_rgb) {
 	if (!p_src_rgb.is_valid()) {
-		LOG(ERROR, "Provided images are not valid. Cannot pack");
+		TERRAINLOG(ERROR, "Provided images are not valid. Cannot pack");
 		return Ref<Image>();
 	}
 	if (p_src_rgb->is_empty()) {
-		LOG(ERROR, "Provided images are empty. Cannot pack");
+		TERRAINLOG(ERROR, "Provided images are empty. Cannot pack");
 		return Ref<Image>();
 	}
 	real_t lum_contrast;
@@ -456,7 +464,7 @@ void Terrain3DUtil::_bind_methods() {
 	ClassDB::bind_static_method("Terrain3DUtil", D_METHOD("get_min_max", "image"), &Terrain3DUtil::get_min_max);
 	ClassDB::bind_static_method("Terrain3DUtil", D_METHOD("get_thumbnail", "image", "size"), &Terrain3DUtil::get_thumbnail, DEFVAL(Vector2i(256, 256)));
 	ClassDB::bind_static_method("Terrain3DUtil", D_METHOD("get_filled_image", "size", "color", "create_mipmaps", "format"), &Terrain3DUtil::get_filled_image);
-	ClassDB::bind_static_method("Terrain3DUtil", D_METHOD("load_image", "file_name", "cache_mode", "r16_height_range", "r16_size"), &Terrain3DUtil::load_image, DEFVAL(ResourceLoader::CACHE_MODE_IGNORE), DEFVAL(Vector2(0, 255)), DEFVAL(V2I_ZERO));
+	ClassDB::bind_static_method("Terrain3DUtil", D_METHOD("load_image", "file_name", "cache_mode", "r16_height_range", "r16_size"), &Terrain3DUtil::load_image, DEFVAL(ResourceFormatLoader::CACHE_MODE_IGNORE), DEFVAL(Vector2(0, 255)), DEFVAL(V2I_ZERO));
 	ClassDB::bind_static_method("Terrain3DUtil", D_METHOD("pack_image", "src_rgb", "src_a", "invert_green", "invert_alpha", "alpha_channel"), &Terrain3DUtil::pack_image, DEFVAL(false), DEFVAL(false), DEFVAL(0));
 	ClassDB::bind_static_method("Terrain3DUtil", D_METHOD("luminance_to_height", "src_rgb"), &Terrain3DUtil::luminance_to_height, DEFVAL(false));
 }

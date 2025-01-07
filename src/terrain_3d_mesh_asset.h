@@ -3,14 +3,10 @@
 #ifndef TERRAIN3D_MESH_ASSET_CLASS_H
 #define TERRAIN3D_MESH_ASSET_CLASS_H
 
-#include <godot_cpp/classes/array_mesh.hpp>
-#include <godot_cpp/classes/material.hpp>
-#include <godot_cpp/classes/packed_scene.hpp>
-#include <godot_cpp/classes/resource.hpp>
-#include <godot_cpp/classes/texture2d.hpp>
-
 #include "constants.h"
 #include "terrain_3d_asset_resource.h"
+#include "scene/3d/visual_instance_3d.h"
+#include "scene/resources/packed_scene.h"
 
 using namespace godot;
 
@@ -55,8 +51,8 @@ public:
 
 	void clear() override;
 
-	void set_name(const String &p_name) override;
-	String get_name() const override { return _name; }
+	// void set_name(const String &p_name) override;
+	// String get_name() const override { return _name; }
 
 	void set_id(const int p_new_id) override;
 	int get_id() const override { return _id; }

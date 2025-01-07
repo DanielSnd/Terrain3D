@@ -3,27 +3,34 @@
 #ifndef TERRAIN3D_CLASS_H
 #define TERRAIN3D_CLASS_H
 
-#include <godot_cpp/classes/camera3d.hpp>
-#include <godot_cpp/classes/editor_plugin.hpp>
-#include <godot_cpp/classes/geometry_instance3d.hpp>
-#include <godot_cpp/classes/mesh.hpp>
-#include <godot_cpp/classes/mesh_instance3d.hpp>
-#include <godot_cpp/classes/rendering_server.hpp>
-#include <godot_cpp/classes/static_body3d.hpp>
-#include <godot_cpp/classes/sub_viewport.hpp>
-
 #include "constants.h"
 #include "terrain_3d_assets.h"
 #include "terrain_3d_data.h"
+#ifdef TOOLS_ENABLED
 #include "terrain_3d_editor.h"
+#endif
 #include "terrain_3d_instancer.h"
 #include "terrain_3d_material.h"
+#include "editor/plugins/editor_plugin.h"
+#include "scene/3d/mesh_instance_3d.h"
 
-using namespace godot;
+#include "terrain_3d_util.h"
+#include "geoclipmap.h"
+#include "logger.h"
+#include "core/config/project_settings.h"
+#include "scene/3d/label_3d.h"
+#include "scene/3d/multimesh_instance_3d.h"
+#include "scene/3d/physics/collision_shape_3d.h"
+#include "scene/3d/physics/static_body_3d.h"
+#include "scene/resources/surface_tool.h"
+#include "scene/resources/3d/height_map_shape_3d.h"
+#include "scene/resources/3d/primitive_meshes.h"
+#include "scene/3d/node_3d.h"
+#include "scene/3d/visual_instance_3d.h"
+#include "scene/main/viewport.h"
 
 class Terrain3D : public Node3D {
 	GDCLASS(Terrain3D, Node3D);
-	CLASS_NAME();
 
 public: // Constants
 	enum RegionSize {
@@ -135,15 +142,13 @@ private:
 			const Terrain3DData::HeightFilter p_filter, const bool require_nav, const int32_t x, const int32_t z) const;
 
 public:
-	static int debug_level;
-
 	Terrain3D();
 	~Terrain3D() {}
 
 	// Terrain
 	String get_version() const { return _version; }
 	void set_debug_level(const int p_level);
-	int get_debug_level() const { return debug_level; }
+	int get_debug_level() const { return Terrain3DLogger::get_debug_level(); }
 	void set_data_directory(String p_dir);
 	String get_data_directory() const { return (_data == nullptr) ? "" : _data_directory; }
 
@@ -254,7 +259,7 @@ public:
 	PackedVector3Array generate_nav_mesh_source_geometry(const AABB &p_global_aabb, const bool p_require_nav = true) const;
 
 	// Godot Callbacks
-	PackedStringArray _get_configuration_warnings() const override;
+	PackedStringArray _get_configuration_warnings() const;
 
 protected:
 	void _notification(const int p_what);

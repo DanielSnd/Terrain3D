@@ -3,11 +3,11 @@
 #ifndef TERRAIN3D_REGISTER_TYPES_H
 #define TERRAIN3D_REGISTER_TYPES_H
 
-#include <godot_cpp/godot.hpp>
+#include "modules/register_module_types.h"
+#include "core/object/class_db.h"
+#include "core/config/engine.h"
 
-using namespace godot;
-
-void initialize_terrain_3d(ModuleInitializationLevel p_level);
-void uninitialize_terrain_3d(ModuleInitializationLevel p_level);
+void initialize_terrain3d_module(ModuleInitializationLevel p_level);
+void uninitialize_terrain3d_module(ModuleInitializationLevel p_level);
 
 #endif // TERRAIN3D_REGISTER_TYPES_H

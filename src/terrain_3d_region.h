@@ -112,7 +112,7 @@ public:
 	// Utility
 	void set_data(const Dictionary &p_data);
 	Dictionary get_data() const;
-	Ref<Terrain3DRegion> duplicate(const bool p_deep = false);
+	virtual Ref<Resource> duplicate(bool p_subresources = false) const override;
 
 protected:
 	static void _bind_methods();

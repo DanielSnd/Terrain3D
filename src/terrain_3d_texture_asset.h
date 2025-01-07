@@ -3,12 +3,8 @@
 #ifndef TERRAIN3D_TEXTURE_CLASS_H
 #define TERRAIN3D_TEXTURE_CLASS_H
 
-#include <godot_cpp/classes/texture2d.hpp>
-
-#include "constants.h"
+#include "logger.h"
 #include "terrain_3d_asset_resource.h"
-
-using namespace godot;
 
 class Terrain3DTextureAsset : public Terrain3DAssetResource {
 	GDCLASS(Terrain3DTextureAsset, Terrain3DAssetResource);
@@ -29,8 +25,8 @@ public:
 
 	void clear() override;
 
-	void set_name(const String &p_name) override;
-	String get_name() const override { return _name; }
+	// void set_name(const String &p_name) override;
+	// String get_name() const override { return _name; }
 
 	void set_id(const int p_new_id) override;
 	int get_id() const override { return _id; }

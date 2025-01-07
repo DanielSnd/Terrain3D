@@ -1,14 +1,16 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include <godot_cpp/classes/editor_undo_redo_manager.hpp>
-#include <godot_cpp/classes/engine.hpp>
-#include <godot_cpp/classes/time.hpp>
 
+#ifdef TOOLS_ENABLED
 #include "logger.h"
+#include "terrain_3d.h"
 #include "terrain_3d_data.h"
 #include "terrain_3d_editor.h"
 #include "terrain_3d_util.h"
+#include "core/object/undo_redo.h"
+#include "editor/editor_undo_redo_manager.h"
 
+#include "terrain_3d_texture_asset.h"
 ///////////////////////////
 // Private Functions
 ///////////////////////////
@@ -32,14 +34,14 @@ Ref<Terrain3DRegion> Terrain3DEditor::_operate_region(const Vector2i &p_region_l
 
 	// Check if in bounds, limiting errors
 	bool can_print = false;
-	uint64_t ticks = Time::get_singleton()->get_ticks_msec();
+	uint64_t ticks = OS::get_singleton()->get_ticks_msec();
 	if (ticks - _last_region_bounds_error > 1000) {
 		_last_region_bounds_error = ticks;
 		can_print = true;
 	}
 	if (data->get_region_map_index(p_region_loc) < 0) {
 		if (can_print) {
-			LOG(INFO, "Location ", p_region_loc, " out of bounds. Max: ",
+			TERRAINLOG(INFO, "Location ", p_region_loc, " out of bounds. Max: ",
 					-Terrain3DData::REGION_MAP_SIZE / 2, " to ", Terrain3DData::REGION_MAP_SIZE / 2 - 1);
 		}
 		return Ref<Terrain3DRegion>();
@@ -48,7 +50,7 @@ Ref<Terrain3DRegion> Terrain3DEditor::_operate_region(const Vector2i &p_region_l
 	// Get Region & dump data if debug
 	Ref<Terrain3DRegion> region = data->get_region(p_region_loc);
 	if (can_print) {
-		LOG(DEBUG, "Tool: ", _tool, " Op: ", _operation, " processing region ", p_region_loc, ": ",
+		TERRAINLOG(DEBUG, "Tool: ", _tool, " Op: ", _operation, " processing region ", p_region_loc, ": ",
 				region.is_valid() ? String::num_uint64(region->get_instance_id()) : "Null");
 	}
 
@@ -60,7 +62,7 @@ Ref<Terrain3DRegion> Terrain3DEditor::_operate_region(const Vector2i &p_region_l
 			changed = true;
 			if (region.is_null()) {
 				// A new region can't be made
-				LOG(ERROR, "A new region cannot be created");
+				TERRAINLOG(ERROR, "A new region cannot be created");
 				return region;
 			}
 		}
@@ -83,11 +85,11 @@ Ref<Terrain3DRegion> Terrain3DEditor::_operate_region(const Vector2i &p_region_l
 }
 
 void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_t p_camera_direction) {
-	LOG(EXTREME, "Operating at ", p_global_position, " tool type ", _tool, " op ", _operation);
+	TERRAINLOG(EXTREME, "Operating at ", p_global_position, " tool type ", _tool, " op ", _operation);
 
 	MapType map_type = _get_map_type();
 	if (map_type == TYPE_MAX) {
-		LOG(ERROR, "Invalid tool selected");
+		TERRAINLOG(ERROR, "Invalid tool selected");
 		return;
 	}
 
@@ -106,7 +108,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 
 	Ref<Image> brush_image = _brush_data["brush_image"];
 	if (brush_image.is_null()) {
-		LOG(ERROR, "Invalid brush image. Returning");
+		TERRAINLOG(ERROR, "Invalid brush image. Returning");
 		return;
 	}
 	Vector2i img_size = _brush_data["brush_image_size"];
@@ -121,9 +123,9 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 	// a mouse click. This occasionally catches a pen click, but avoids most pen lifts.
 	real_t mouse_pressure = CLAMP(real_t(_brush_data.get("mouse_pressure", 0.f)), 0.f, 1.f);
 	if (mouse_pressure > CMP_EPSILON && mouse_pressure < 1.f) {
-		_last_pen_tick = Time::get_singleton()->get_ticks_msec();
+		_last_pen_tick = OS::get_singleton()->get_ticks_msec();
 	}
-	uint64_t ticks = Time::get_singleton()->get_ticks_msec();
+	uint64_t ticks = OS::get_singleton()->get_ticks_msec();
 	if (mouse_pressure < CMP_EPSILON && ticks - _last_pen_tick >= 100) {
 		mouse_pressure = 1.f;
 	}
@@ -147,7 +149,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 	real_t gamma = _brush_data["gamma"];
 	PackedVector3Array gradient_points = _brush_data["gradient_points"];
 
-	real_t randf = UtilityFunctions::randf();
+	real_t randf = Math::randf();
 	real_t rot = randf * Math_PI * real_t(_brush_data["jitter"]);
 	if (_brush_data["align_to_view"]) {
 		rot += p_camera_direction;
@@ -233,7 +235,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 						} else if (modifier_alt && !std::isnan(p_global_position.y)) {
 							// Lift troughs
 							real_t brush_center_y = p_global_position.y + brush_alpha * strength;
-							destf = Math::clamp(brush_center_y, srcf, srcf + brush_alpha * strength);
+							destf = CLAMP(brush_center_y, srcf, srcf + brush_alpha * strength);
 						} else {
 							// Raise
 							destf = srcf + (brush_alpha * strength);
@@ -247,7 +249,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 						} else if (modifier_alt && !std::isnan(p_global_position.y)) {
 							// Flatten peaks
 							real_t brush_center_y = p_global_position.y - brush_alpha * strength;
-							destf = Math::clamp(brush_center_y, srcf - brush_alpha * strength, srcf);
+							destf = CLAMP(brush_center_y, srcf - brush_alpha * strength, srcf);
 						} else {
 							// Lower
 							destf = srcf - (brush_alpha * strength);
@@ -298,7 +300,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 
 							Vector2 dir = point_2_xz - point_1_xz;
 							real_t weight = dir.normalized().dot(brush_xz - point_1_xz) / dir.length();
-							weight = Math::clamp(weight, (real_t)0.0f, (real_t)1.0f);
+							weight = CLAMP(weight, (real_t)0.0f, (real_t)1.0f);
 							real_t height = Math::lerp(point_1.y, point_2.y, weight);
 							destf = Math::lerp(srcf, height, CLAMP(brush_alpha * strength, 0.f, 1.f));
 						}
@@ -533,7 +535,7 @@ void Terrain3DEditor::_store_undo() {
 	if (_tool < 0 || _tool >= TOOL_MAX) {
 		return;
 	}
-	LOG(DEBUG, "Finalize undo & redo snapshots");
+	TERRAINLOG(DEBUG, "Finalize undo & redo snapshots");
 	Dictionary redo_data;
 	// Store current locations; Original backed up in start_operation()
 	redo_data["region_locations"] = _terrain->get_data()->get_region_locations().duplicate();
@@ -555,40 +557,40 @@ void Terrain3DEditor::_store_undo() {
 	if (_terrain->get_data()->get_edited_area().has_volume()) {
 		_undo_data["edited_area"] = _terrain->get_data()->get_edited_area();
 		redo_data["edited_area"] = _terrain->get_data()->get_edited_area();
-		LOG(DEBUG, "Adding edited area to snapshots: ", _undo_data["edited_area"]);
+		TERRAINLOG(DEBUG, "Adding edited area to snapshots: ", _undo_data["edited_area"]);
 	}
 
 	// Store data in Godot's Undo/Redo Manager
-	EditorUndoRedoManager *undo_redo = _terrain->get_plugin()->get_undo_redo();
-	LOG(INFO, "Storing undo snapshot");
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	TERRAINLOG(INFO, "Storing undo snapshot");
 	String action_name = String("Terrain3D ") + OPNAME[_operation] + String(" ") + TOOLNAME[_tool];
-	LOG(DEBUG, "Creating undo action: '", action_name, "'");
+	TERRAINLOG(DEBUG, "Creating undo action: '", action_name, "'");
 	undo_redo->create_action(action_name, UndoRedo::MERGE_DISABLE, _terrain);
 
-	LOG(DEBUG, "Storing undo snapshot: ", _undo_data);
+	TERRAINLOG(DEBUG, "Storing undo snapshot: ", _undo_data);
 	undo_redo->add_undo_method(this, "apply_undo", _undo_data.duplicate());
 
-	LOG(DEBUG, "Storing redo snapshot: ", redo_data);
+	TERRAINLOG(DEBUG, "Storing redo snapshot: ", redo_data);
 	undo_redo->add_do_method(this, "apply_undo", redo_data);
 
-	LOG(DEBUG, "Committing undo action");
+	TERRAINLOG(DEBUG, "Committing undo action");
 	undo_redo->commit_action(false);
 }
 
 void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
 	IS_INIT_COND_MESG(_terrain->get_plugin() == nullptr, "_terrain isn't initialized, returning", VOID);
-	LOG(INFO, "Applying Undo/Redo data");
+	TERRAINLOG(INFO, "Applying Undo/Redo data");
 
 	Terrain3DData *data = _terrain->get_data();
 
 	if (p_data.has("edited_regions")) {
 		Util::print_arr("Edited regions", p_data["edited_regions"]);
 		TypedArray<Terrain3DRegion> undo_regions = p_data["edited_regions"];
-		LOG(DEBUG, "Backup has ", undo_regions.size(), " edited regions");
+		TERRAINLOG(DEBUG, "Backup has ", undo_regions.size(), " edited regions");
 		for (int i = 0; i < undo_regions.size(); i++) {
 			Ref<Terrain3DRegion> region = undo_regions[i];
 			if (region.is_null()) {
-				LOG(ERROR, "Null region saved in undo data. Please report this error.");
+				TERRAINLOG(ERROR, "Null region saved in undo data. Please report this error.");
 				continue;
 			}
 			region->sanitize_maps(); // Live data may not have some maps so must be sanitized
@@ -601,26 +603,26 @@ void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
 	}
 
 	if (p_data.has("edited_area")) {
-		LOG(DEBUG, "Edited area: ", p_data["edited_area"]);
+		TERRAINLOG(DEBUG, "Edited area: ", p_data["edited_area"]);
 		data->add_edited_area(p_data["edited_area"]);
 	}
 
 	if (p_data.has("added_regions")) {
-		LOG(DEBUG, "Added regions: ", p_data["added_regions"]);
+		TERRAINLOG(DEBUG, "Added regions: ", p_data["added_regions"]);
 		TypedArray<Vector2i> region_locs = p_data["added_regions"];
 		for (int i = 0; i < region_locs.size(); i++) {
 			data->set_region_deleted(region_locs[i], true);
 			data->set_region_modified(region_locs[i], true);
-			LOG(DEBUG, "Marking region: ", region_locs[i], " +deleted, +modified");
+			TERRAINLOG(DEBUG, "Marking region: ", region_locs[i], " +deleted, +modified");
 		}
 	}
 	if (p_data.has("removed_regions")) {
-		LOG(DEBUG, "Removed regions: ", p_data["removed_regions"]);
+		TERRAINLOG(DEBUG, "Removed regions: ", p_data["removed_regions"]);
 		TypedArray<Vector2i> region_locs = p_data["removed_regions"];
 		for (int i = 0; i < region_locs.size(); i++) {
 			data->set_region_deleted(region_locs[i], false);
 			data->set_region_modified(region_locs[i], true);
-			LOG(DEBUG, "Marking region: ", region_locs[i], " -deleted, +modified");
+			TERRAINLOG(DEBUG, "Marking region: ", region_locs[i], " -deleted, +modified");
 			Ref<Terrain3DRegion> region = data->get_region(region_locs[i]);
 			if (region.is_valid()) {
 				_send_region_aabb(region_locs[i], region->get_height_range());
@@ -633,7 +635,7 @@ void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
 		// Load w/ duplicate or it gets a bit wonky undoing removed regions w/ saves
 		_terrain->get_data()->set_region_locations(p_data["region_locations"].duplicate());
 		Array locations = data->get_region_locations();
-		LOG(DEBUG, "Locations(", locations.size(), "): ", locations);
+		TERRAINLOG(DEBUG, "Locations(", locations.size(), "): ", locations);
 	}
 	// If this undo set modifies the region qty, we must rebuild the arrays. Otherwise we can update individual layers
 	if (p_data.has("added_regions") || p_data.has("removed_regions")) {
@@ -651,7 +653,7 @@ void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
 	}
 	_terrain->get_instancer()->force_update_mmis();
 	if (_terrain->get_plugin()->has_method("update_grid")) {
-		LOG(DEBUG, "Calling GDScript update_grid()");
+		TERRAINLOG(DEBUG, "Calling GDScript update_grid()");
 		_terrain->get_plugin()->call("update_grid");
 	}
 }
@@ -667,23 +669,23 @@ void Terrain3DEditor::set_brush_data(const Dictionary &p_data) {
 
 	// Sanitize image and textures
 	Array brush_images = p_data["brush"];
-	bool error = false;
+//	bool error = false;
 	if (brush_images.size() == 2) {
 		Ref<Image> img = brush_images[0];
 		if (img.is_valid() && !img->is_empty()) {
 			_brush_data["brush_image"] = img;
 			_brush_data["brush_image_size"] = img->get_size();
 		} else {
-			LOG(ERROR, "Brush data doesn't contain a valid image");
+			TERRAINLOG(ERROR, "Brush data doesn't contain a valid image");
 		}
 		Ref<Texture2D> tex = brush_images[1];
 		if (tex.is_valid() && tex->get_width() > 0 && tex->get_height() > 0) {
 			_brush_data["brush_texture"] = tex;
 		} else {
-			LOG(ERROR, "Brush data doesn't contain a valid texture");
+			TERRAINLOG(ERROR, "Brush data doesn't contain a valid texture");
 		}
 	} else {
-		LOG(ERROR, "Brush data doesn't contain an image and texture");
+		TERRAINLOG(ERROR, "Brush data doesn't contain an image and texture");
 	}
 
 	// Santize settings
@@ -734,7 +736,7 @@ void Terrain3DEditor::set_tool(const Tool p_tool) {
 // Called on mouse click
 void Terrain3DEditor::start_operation(const Vector3 &p_global_position) {
 	IS_DATA_INIT_MESG("Terrain isn't initialized", VOID);
-	LOG(INFO, "Setting up undo snapshot");
+	TERRAINLOG(INFO, "Setting up undo snapshot");
 	_undo_data.clear();
 	_undo_data["region_locations"] = _terrain->get_data()->get_region_locations().duplicate();
 	_is_operating = true;
@@ -752,7 +754,7 @@ void Terrain3DEditor::start_operation(const Vector3 &p_global_position) {
 void Terrain3DEditor::operate(const Vector3 &p_global_position, const real_t p_camera_direction) {
 	IS_DATA_INIT_MESG("Terrain isn't initialized", VOID);
 	if (!_is_operating) {
-		LOG(ERROR, "Run start_operation() before operating");
+		TERRAINLOG(ERROR, "Run start_operation() before operating");
 		return;
 	}
 	_operation_movement = p_global_position - _operation_position;
@@ -779,7 +781,7 @@ void Terrain3DEditor::operate(const Vector3 &p_global_position, const real_t p_c
 
 void Terrain3DEditor::backup_region(const Ref<Terrain3DRegion> &p_region) {
 	if (_is_operating && p_region.is_valid() && !p_region->is_edited()) {
-		LOG(DEBUG, "Storing original copy of region: ", p_region->get_location());
+		TERRAINLOG(DEBUG, "Storing original copy of region: ", p_region->get_location());
 		_original_regions.push_back(p_region->duplicate(true));
 		_edited_regions.push_back(p_region);
 		p_region->set_edited(true);
@@ -791,7 +793,7 @@ void Terrain3DEditor::backup_region(const Ref<Terrain3DRegion> &p_region) {
 void Terrain3DEditor::stop_operation() {
 	IS_DATA_INIT_MESG("Terrain isn't initialized", VOID);
 	// If undo was created and terrain actually modified, store it
-	LOG(DEBUG, "Backed up regions: ", _original_regions.size(), ", Edited regions: ", _edited_regions.size(),
+	TERRAINLOG(DEBUG, "Backed up regions: ", _original_regions.size(), ", Edited regions: ", _edited_regions.size(),
 			", Added/Removed regions: ", _added_removed_locations.size());
 	if (_is_operating && (!_added_removed_locations.is_empty() || !_edited_regions.is_empty())) {
 		for (int i = 0; i < _edited_regions.size(); i++) {
@@ -852,3 +854,5 @@ void Terrain3DEditor::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("apply_undo", "data"), &Terrain3DEditor::_apply_undo);
 }
+
+#endif

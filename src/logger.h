@@ -3,12 +3,22 @@
 #ifndef LOGGER_CLASS_H
 #define LOGGER_CLASS_H
 
-#include <godot_cpp/variant/utility_functions.hpp>
+#include "core/string/print_string.h"
 
-#include "terrain_3d.h"
+class Terrain3DLogger {
+private:
+    static int debug_level;
 
-using namespace godot;
-
+public:
+    enum AssetType {
+		TYPE_TEXTURE,
+		TYPE_MESH,
+	};
+    static inline const int MAX_TEXTURES = 32;
+	static inline const int MAX_MESHES = 256;
+    static void set_debug_level(int level) { debug_level = level; }
+    static int get_debug_level() { return debug_level; }
+};
 /**
  * Prints warnings, errors, and regular messages to the console.
  * Regular messages are filtered based on the user specified debug level.
@@ -27,14 +37,14 @@ using namespace godot;
 #define DEBUG 2
 #define EXTREME 3
 #ifdef DEBUG_ENABLED
-#define LOG(level, ...)                                                              \
-	if (level == ERROR)                                                              \
-		UtilityFunctions::push_error(__class__, ":", __func__, ": ", __VA_ARGS__);   \
-	else if (level == WARN)                                                          \
-		UtilityFunctions::push_warning(__class__, ":", __func__, ": ", __VA_ARGS__); \
-	else if (Terrain3D::debug_level >= level)                                        \
-		UtilityFunctions::print(__class__, ":", __func__, ": ", __VA_ARGS__);
+#define TERRAINLOG(level, ...)                                                              \
+if (level == ERROR)                                                              \
+print_line("ERROR", __VA_ARGS__);   \
+else if (level == WARN)                                                          \
+print_line("WARNING", __VA_ARGS__); \
+else if (Terrain3DLogger::get_debug_level() >= level)                                        \
+print_line(__VA_ARGS__);
 #else
-#define LOG(...)
+#define TERRAINLOG(...)
 #endif
 #endif // LOGGER_CLASS_H

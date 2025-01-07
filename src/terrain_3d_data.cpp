@@ -1,21 +1,21 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include <godot_cpp/classes/dir_access.hpp>
-#include <godot_cpp/classes/editor_file_system.hpp>
-#include <godot_cpp/classes/editor_interface.hpp>
-#include <godot_cpp/classes/engine.hpp>
-#include <godot_cpp/classes/file_access.hpp>
-#include <godot_cpp/classes/resource_saver.hpp>
-
 #include "logger.h"
 #include "terrain_3d_data.h"
+#include "terrain_3d.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/editor_file_system.h"
+#include "editor/editor_interface.h"
+#endif
+#include "terrain_3d_texture_asset.h"
 
 ///////////////////////////
 // Private Functions
 ///////////////////////////
 
 void Terrain3DData::_clear() {
-	LOG(INFO, "Clearing data");
+	TERRAINLOG(INFO, "Clearing storage");
 	_region_map_dirty = true;
 	_region_map.clear();
 	_region_map.resize(REGION_MAP_SIZE * REGION_MAP_SIZE);
@@ -47,10 +47,10 @@ void Terrain3DData::_copy_paste_dfr(const Terrain3DRegion *p_src_region, const R
 
 void Terrain3DData::initialize(Terrain3D *p_terrain) {
 	if (p_terrain == nullptr) {
-		LOG(ERROR, "Initialization failed, p_terrain is null");
+		TERRAINLOG(ERROR, "Initialization failed, p_terrain is null");
 		return;
 	}
-	LOG(INFO, "Initializing data");
+	TERRAINLOG(INFO, "Initializing data");
 	bool prev_initialized = _terrain != nullptr;
 	_terrain = p_terrain;
 	_region_map.resize(REGION_MAP_SIZE * REGION_MAP_SIZE);
@@ -63,7 +63,7 @@ void Terrain3DData::initialize(Terrain3D *p_terrain) {
 }
 
 void Terrain3DData::set_region_locations(const TypedArray<Vector2i> &p_locations) {
-	LOG(INFO, "Setting _region_locations with array sized: ", p_locations.size());
+	TERRAINLOG(INFO, "Setting _region_locations with array sized: ", p_locations.size());
 	_region_locations = p_locations;
 	_region_map_dirty = true;
 	update_maps();
@@ -76,7 +76,7 @@ TypedArray<Terrain3DRegion> Terrain3DData::get_regions_active(const bool p_copy,
 		Vector2i region_loc = _region_locations[i];
 		Ref<Terrain3DRegion> region = get_region(region_loc);
 		if (region.is_valid()) {
-			region_arr.push_back((p_copy) ? region->duplicate(p_deep) : region);
+			region_arr.push_back((p_copy) ? static_cast<Ref<Terrain3DRegion>>(region->duplicate(p_deep)) : region);
 		}
 	}
 	return region_arr;
@@ -87,7 +87,7 @@ TypedArray<Terrain3DRegion> Terrain3DData::get_regions_active(const bool p_copy,
 // Used with change_region_size, dest Terrain3DRegion is bound as the 4th parameter
 void Terrain3DData::do_for_regions(const Rect2i &p_area, const Callable &p_callback) {
 	Rect2i location_bounds(V2I_DIVIDE_FLOOR(p_area.position, _region_size), V2I_DIVIDE_CEIL(p_area.size, _region_size));
-	LOG(DEBUG, "Processing global area: ", p_area, " -> ", location_bounds);
+	TERRAINLOG(DEBUG, "Processing global area: ", p_area, " -> ", location_bounds);
 	Point2i current_region_loc;
 	for (int y = location_bounds.position.y; y < location_bounds.get_end().y; y++) {
 		current_region_loc.y = y;
@@ -95,14 +95,14 @@ void Terrain3DData::do_for_regions(const Rect2i &p_area, const Callable &p_callb
 			current_region_loc.x = x;
 			Ref<Terrain3DRegion> region = get_region(current_region_loc);
 			if (region.is_valid() && !region->is_deleted()) {
-				LOG(DEBUG, "Current region: ", current_region_loc);
+				TERRAINLOG(DEBUG, "Current region: ", current_region_loc);
 				Rect2i region_area = p_area.intersection(Rect2i(current_region_loc * _region_size, _region_sizev));
-				LOG(DEBUG, "Region bounds: ", Rect2i(current_region_loc * _region_size, _region_sizev));
-				LOG(DEBUG, "Region area: ", region_area);
+				TERRAINLOG(DEBUG, "Region bounds: ", Rect2i(current_region_loc * _region_size, _region_sizev));
+				TERRAINLOG(DEBUG, "Region area: ", region_area);
 				Rect2i dst_coords(region_area.position - p_area.position, region_area.size);
 				Rect2i src_coords(region_area.position - (region->get_location() * _region_sizev), dst_coords.size);
-				LOG(DEBUG, "src map coords: ", src_coords);
-				LOG(DEBUG, "dst map coords: ", dst_coords);
+				TERRAINLOG(DEBUG, "src map coords: ", src_coords);
+				TERRAINLOG(DEBUG, "dst map coords: ", dst_coords);
 				p_callback.call(region.ptr(), src_coords, dst_coords);
 			}
 		}
@@ -110,9 +110,9 @@ void Terrain3DData::do_for_regions(const Rect2i &p_area, const Callable &p_callb
 }
 
 void Terrain3DData::change_region_size(int p_new_size) {
-	LOG(INFO, "Changing region size from: ", _region_size, " to ", p_new_size);
+	TERRAINLOG(INFO, "Changing region size from: ", _region_size, " to ", p_new_size);
 	if (p_new_size < 64 || p_new_size > 2048 || !is_power_of_2(p_new_size)) {
-		LOG(ERROR, "Invalid region size: ", p_new_size, ". Must be 64, 128, 256, 512, 1024, 2048");
+		TERRAINLOG(ERROR, "Invalid region size: ", p_new_size, ". Must be 64, 128, 256, 512, 1024, 2048");
 		return;
 	}
 	if (p_new_size == _region_size) {
@@ -179,7 +179,7 @@ void Terrain3DData::change_region_size(int p_new_size) {
 void Terrain3DData::set_region_modified(const Vector2i &p_region_loc, const bool p_modified) {
 	Ref<Terrain3DRegion> region = get_region(p_region_loc);
 	if (region.is_null()) {
-		LOG(ERROR, "Region not found at: ", p_region_loc);
+		TERRAINLOG(ERROR, "Region not found at: ", p_region_loc);
 		return;
 	}
 	return region->set_modified(p_modified);
@@ -188,7 +188,7 @@ void Terrain3DData::set_region_modified(const Vector2i &p_region_loc, const bool
 bool Terrain3DData::is_region_modified(const Vector2i &p_region_loc) const {
 	Ref<Terrain3DRegion> region = get_region(p_region_loc);
 	if (region.is_null()) {
-		LOG(ERROR, "Region not found at: ", p_region_loc);
+		TERRAINLOG(ERROR, "Region not found at: ", p_region_loc);
 		return false;
 	}
 	return region->is_modified();
@@ -197,7 +197,7 @@ bool Terrain3DData::is_region_modified(const Vector2i &p_region_loc) const {
 void Terrain3DData::set_region_deleted(const Vector2i &p_region_loc, const bool p_deleted) {
 	Ref<Terrain3DRegion> region = get_region(p_region_loc);
 	if (region.is_null()) {
-		LOG(ERROR, "Region not found at: ", p_region_loc);
+		TERRAINLOG(ERROR, "Region not found at: ", p_region_loc);
 		return;
 	}
 	return region->set_deleted(p_deleted);
@@ -206,7 +206,7 @@ void Terrain3DData::set_region_deleted(const Vector2i &p_region_loc, const bool 
 bool Terrain3DData::is_region_deleted(const Vector2i &p_region_loc) const {
 	Ref<Terrain3DRegion> region = get_region(p_region_loc);
 	if (region.is_null()) {
-		LOG(ERROR, "Region not found at: ", p_region_loc);
+		TERRAINLOG(ERROR, "Region not found at: ", p_region_loc);
 		return true;
 	}
 	return region->is_deleted();
@@ -235,15 +235,15 @@ Ref<Terrain3DRegion> Terrain3DData::add_region_blank(const Vector2i &p_region_lo
  */
 Error Terrain3DData::add_region(const Ref<Terrain3DRegion> &p_region, const bool p_update) {
 	if (p_region.is_null()) {
-		LOG(ERROR, "Provided region is null. Returning");
+		TERRAINLOG(ERROR, "Provided region is null. Returning");
 		return FAILED;
 	}
 	Vector2i region_loc = p_region->get_location();
-	LOG(INFO, "Adding region at location ", region_loc, ", update maps: ", p_update ? "yes" : "no");
+	TERRAINLOG(INFO, "Adding region at location ", region_loc, ", update maps: ", p_update ? "yes" : "no");
 
 	// Check bounds and slow report errors
 	if (get_region_map_index(region_loc) < 0) {
-		LOG(ERROR, "Location ", region_loc, " out of bounds. Max: ",
+		TERRAINLOG(ERROR, "Location ", region_loc, " out of bounds. Max: ",
 				-REGION_MAP_SIZE / 2, " to ", REGION_MAP_SIZE / 2 - 1);
 		return FAILED;
 	}
@@ -252,11 +252,11 @@ Error Terrain3DData::add_region(const Ref<Terrain3DRegion> &p_region, const bool
 	if (!_region_locations.has(region_loc)) {
 		_region_locations.push_back(region_loc);
 	} else {
-		LOG(INFO, "Overwriting ", (_regions.has(region_loc)) ? "deleted" : "existing", " region at ", region_loc);
+		TERRAINLOG(INFO, "Overwriting ", (_regions.has(region_loc)) ? "deleted" : "existing", " region at ", region_loc);
 	}
 	_regions[region_loc] = p_region;
 	_region_map_dirty = true;
-	LOG(DEBUG, "Storing region ", region_loc, " version ", vformat("%.3f", p_region->get_version()), " id: ", _region_locations.size());
+	TERRAINLOG(DEBUG, "Storing region ", region_loc, " version ", vformat("%.3f", p_region->get_version()), " id: ", _region_locations.size());
 	if (p_update) {
 		force_update_maps();
 		_terrain->get_instancer()->force_update_mmis();
@@ -278,88 +278,90 @@ void Terrain3DData::remove_regionl(const Vector2i &p_region_loc, const bool p_up
 // It remains stored in _regions and the file remains on disk until saved, when both are removed
 void Terrain3DData::remove_region(const Ref<Terrain3DRegion> &p_region, const bool p_update) {
 	if (p_region.is_null()) {
-		LOG(ERROR, "Region not found or is null. Returning");
+		TERRAINLOG(ERROR, "Region not found or is null. Returning");
 		return;
 	}
 
 	Vector2i region_loc = p_region->get_location();
 	int region_id = _region_locations.find(region_loc);
-	LOG(INFO, "Marking region ", region_loc, " for deletion. update_maps: ", p_update ? "yes" : "no");
+	TERRAINLOG(INFO, "Marking region ", region_loc, " for deletion. update_maps: ", p_update ? "yes" : "no");
 	if (region_id < 0) {
-		LOG(ERROR, "Region ", region_loc, " not found in region_locations. Returning");
+		TERRAINLOG(ERROR, "Region ", region_loc, " not found in region_locations. Returning");
 		return;
 	}
 	p_region->set_deleted(true);
 	_region_locations.remove_at(region_id);
 	_region_map_dirty = true;
-	LOG(DEBUG, "Removing from region_locations, new size: ", _region_locations.size());
+	TERRAINLOG(DEBUG, "Removing from region_locations, new size: ", _region_locations.size());
 	if (p_update) {
-		LOG(DEBUG, "Updating generated maps");
+		TERRAINLOG(DEBUG, "Updating generated maps");
 		force_update_maps();
 		_terrain->get_instancer()->force_update_mmis();
 	}
 }
 
 void Terrain3DData::save_directory(const String &p_dir) {
-	LOG(INFO, "Saving data files to ", p_dir);
+	TERRAINLOG(INFO, "Saving data files to ", p_dir);
 	Array locations = _regions.keys();
 	for (int i = 0; i < locations.size(); i++) {
 		save_region(locations[i], p_dir, _terrain->get_save_16_bit());
 	}
-	if (IS_EDITOR && !EditorInterface::get_singleton()->get_resource_filesystem()->is_scanning()) {
-		EditorInterface::get_singleton()->get_resource_filesystem()->scan();
+	#ifdef TOOLS_ENABLED
+	if (IS_EDITOR && !EditorInterface::get_singleton()->get_resource_file_system()->is_scanning()) {
+		EditorInterface::get_singleton()->get_resource_file_system()->scan();
 	}
+	#endif
 }
 
 // You may need to do a file system scan to update FileSystem panel
 void Terrain3DData::save_region(const Vector2i &p_region_loc, const String &p_dir, const bool p_16_bit) {
 	Ref<Terrain3DRegion> region = get_region(p_region_loc);
 	if (region.is_null()) {
-		LOG(ERROR, "No region found at: ", p_region_loc);
+		TERRAINLOG(ERROR, "No region found at: ", p_region_loc);
 		return;
 	}
 	String fname = Util::location_to_filename(p_region_loc);
 	String path = p_dir + String("/") + fname;
 	// If region marked for deletion, remove from disk and from _regions, but don't free in case stored in undo
 	if (region->is_deleted()) {
-		LOG(DEBUG, "Removing ", p_region_loc, " from _regions");
+		TERRAINLOG(DEBUG, "Removing ", p_region_loc, " from _regions");
 		_regions.erase(p_region_loc);
-		LOG(DEBUG, "File to be deleted: ", path);
-		if (!FileAccess::file_exists(path)) {
-			LOG(INFO, "File to delete ", path, " doesn't exist. (Maybe from add, undo, save)");
+		TERRAINLOG(DEBUG, "File to be deleted: ", path);
+		if (!FileAccess::exists(path)) {
+			TERRAINLOG(INFO, "File to delete ", path, " doesn't exist. (Maybe from add, undo, save)");
 			return;
 		}
 		Ref<DirAccess> da = DirAccess::open(p_dir);
 		if (da.is_null()) {
-			LOG(ERROR, "Cannot open directory for writing: ", p_dir, " error: ", DirAccess::get_open_error());
+			TERRAINLOG(ERROR, "Cannot open directory for writing: ", p_dir, " error: ", DirAccess::get_open_error());
 			return;
 		}
 		Error err = da->remove(fname);
 		if (err != OK) {
-			LOG(ERROR, "Could not remove file: ", fname, ", error code: ", err);
+			TERRAINLOG(ERROR, "Could not remove file: ", fname, ", error code: ", err);
 		}
-		LOG(INFO, "File ", path, " deleted");
+		TERRAINLOG(INFO, "File ", path, " deleted");
 		return;
 	}
 	Error err = region->save(path, p_16_bit);
 	if (!(err == OK || err == ERR_SKIP)) {
-		LOG(ERROR, "Could not save file: ", path, ", error: ", UtilityFunctions::error_string(err), " (", err, ")");
+		TERRAINLOG(ERROR, "Could not save file: ", path, ", error: ", err, " (", err, ")");
 	}
 }
 
 void Terrain3DData::load_directory(const String &p_dir) {
 	if (p_dir.is_empty()) {
-		LOG(ERROR, "Specified data directory is blank");
+		TERRAINLOG(ERROR, "Specified data directory is blank");
 		return;
 	}
 	Ref<DirAccess> da = DirAccess::open(p_dir);
 	if (da.is_null()) {
-		LOG(ERROR, "Cannot read Terrain3D data directory: ", p_dir);
+		TERRAINLOG(ERROR, "Cannot read Terrain3D data directory: ", p_dir);
 		return;
 	}
 	_clear();
 
-	LOG(INFO, "Loading region files from ", p_dir);
+	TERRAINLOG(INFO, "Loading region files from ", p_dir);
 	PackedStringArray files = da->get_files();
 	for (int i = 0; i < files.size(); i++) {
 		String fname = files[i];
@@ -367,28 +369,28 @@ void Terrain3DData::load_directory(const String &p_dir) {
 		if (!fname.begins_with("terrain3d") || !fname.ends_with(".res")) {
 			continue;
 		}
-		LOG(DEBUG, "Loading region from ", path);
+		TERRAINLOG(DEBUG, "Loading region from ", path);
 		Vector2i loc = Util::filename_to_location(fname);
 		if (loc.x == INT32_MAX) {
-			LOG(ERROR, "Cannot get region location from file name: ", fname);
+			TERRAINLOG(ERROR, "Cannot get region location from file name: ", fname);
 			continue;
 		}
-		Ref<Terrain3DRegion> region = ResourceLoader::get_singleton()->load(path, "Terrain3DRegion", ResourceLoader::CACHE_MODE_IGNORE);
+		Ref<Terrain3DRegion> region = ResourceLoader::load(path, "Terrain3DRegion", ResourceFormatLoader::CacheMode::CACHE_MODE_IGNORE);
 		if (region.is_null()) {
-			LOG(ERROR, "Cannot load region at ", path);
+			TERRAINLOG(ERROR, "Cannot load region at ", path);
 			continue;
 		}
-		LOG(INFO, "Loaded region: ", loc, " size: ", region->get_region_size());
+		TERRAINLOG(INFO, "Loaded region: ", loc, " size: ", region->get_region_size());
 		if (_regions.is_empty()) {
 			_terrain->set_region_size((Terrain3D::RegionSize)region->get_region_size());
 		} else {
 			if (_terrain->get_region_size() != (Terrain3D::RegionSize)region->get_region_size()) {
-				LOG(ERROR, "Region size mismatch. First loaded: ", _terrain->get_region_size(), " next: ",
+				TERRAINLOG(ERROR, "Region size mismatch. First loaded: ", _terrain->get_region_size(), " next: ",
 						region->get_region_size(), " in file: ", path);
 				return;
 			}
 		}
-		region->take_over_path(path);
+		region->call("take_over_path",path);
 		region->set_location(loc);
 		region->set_version(CURRENT_VERSION); // Sends upgrade warning if old version
 		add_region(region, false);
@@ -398,27 +400,27 @@ void Terrain3DData::load_directory(const String &p_dir) {
 
 //TODO have load_directory call load_region, or make a load_file that loads a specific path
 void Terrain3DData::load_region(const Vector2i &p_region_loc, const String &p_dir, const bool p_update) {
-	LOG(INFO, "Loading region from location ", p_region_loc);
+	TERRAINLOG(INFO, "Loading region from location ", p_region_loc);
 	String path = p_dir + String("/") + Util::location_to_filename(p_region_loc);
-	if (!FileAccess::file_exists(path)) {
-		LOG(ERROR, "File ", path, " doesn't exist");
+	if (!FileAccess::exists(path)) {
+		TERRAINLOG(ERROR, "File ", path, " doesn't exist");
 		return;
 	}
-	Ref<Terrain3DRegion> region = ResourceLoader::get_singleton()->load(path, "Terrain3DRegion", ResourceLoader::CACHE_MODE_IGNORE);
+	Ref<Terrain3DRegion> region = ResourceLoader::load(path, "Terrain3DRegion", ResourceFormatLoader::CacheMode::CACHE_MODE_IGNORE);
 	if (region.is_null()) {
-		LOG(ERROR, "Cannot load region at ", path);
+		TERRAINLOG(ERROR, "Cannot load region at ", path);
 		return;
 	}
 	if (_regions.is_empty()) {
 		_terrain->set_region_size((Terrain3D::RegionSize)region->get_region_size());
 	} else {
 		if (_terrain->get_region_size() != (Terrain3D::RegionSize)region->get_region_size()) {
-			LOG(ERROR, "Region size mismatch. First loaded: ", _terrain->get_region_size(), " next: ",
+			TERRAINLOG(ERROR, "Region size mismatch. First loaded: ", _terrain->get_region_size(), " next: ",
 					region->get_region_size(), " in file: ", path);
 			return;
 		}
 	}
-	region->take_over_path(path);
+	region->call("take_over_path",path);
 	region->set_location(p_region_loc);
 	region->set_version(CURRENT_VERSION); // Sends upgrade warning if old version
 	add_region(region, p_update);
@@ -426,7 +428,7 @@ void Terrain3DData::load_region(const Vector2i &p_region_loc, const String &p_di
 
 TypedArray<Image> Terrain3DData::get_maps(const MapType p_map_type) const {
 	if (p_map_type < 0 || p_map_type >= TYPE_MAX) {
-		LOG(ERROR, "Specified map type out of range");
+		TERRAINLOG(ERROR, "Specified map type out of range");
 		return TypedArray<Image>();
 	}
 	switch (p_map_type) {
@@ -446,7 +448,7 @@ TypedArray<Image> Terrain3DData::get_maps(const MapType p_map_type) const {
 }
 
 void Terrain3DData::force_update_maps(const MapType p_map_type, const bool p_generate_mipmaps) {
-	LOG(EXTREME, "Regenerating maps of type: ", p_map_type);
+	TERRAINLOG(EXTREME, "Regenerating maps of type: ", p_map_type);
 	switch (p_map_type) {
 		case TYPE_HEIGHT:
 			_generated_height_maps.clear();
@@ -465,7 +467,7 @@ void Terrain3DData::force_update_maps(const MapType p_map_type, const bool p_gen
 			break;
 	}
 	if (p_generate_mipmaps && (p_map_type == TYPE_COLOR || p_map_type == TYPE_MAX)) {
-		LOG(EXTREME, "Regenerating color mipmaps");
+		TERRAINLOG(EXTREME, "Regenerating color mipmaps");
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
 			Ref<Terrain3DRegion> region = get_region(region_loc);
@@ -479,7 +481,7 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 	bool any_changed = false;
 
 	if (_region_map_dirty) {
-		LOG(EXTREME, "Regenerating ", REGION_MAP_VSIZE, " region map array from active regions");
+		TERRAINLOG(EXTREME, "Regenerating ", REGION_MAP_VSIZE, " region map array from active regions");
 		_region_map.clear();
 		_region_map.resize(REGION_MAP_SIZE * REGION_MAP_SIZE);
 		_region_map_dirty = false;
@@ -492,7 +494,7 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 				region_id += 1; // Begin at 1 since 0 = no region
 				int map_index = get_region_map_index(region->get_location());
 				if (map_index >= 0) {
-					_region_map[map_index] = region_id;
+					_region_map.write[map_index] = region_id;
 					_region_locations.push_back(region->get_location());
 				}
 			}
@@ -502,7 +504,7 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 	}
 
 	if (_generated_height_maps.is_dirty()) {
-		LOG(EXTREME, "Regenerating height texture array from regions");
+		TERRAINLOG(EXTREME, "Regenerating height texture array from regions");
 		_height_maps.clear();
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
@@ -510,7 +512,7 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 			if (region.is_valid()) {
 				_height_maps.push_back(region->get_height_map());
 			} else {
-				LOG(ERROR, "Can't find region ", region_loc, ", _regions: ", _regions,
+				TERRAINLOG(ERROR, "Can't find region ", region_loc, ", _regions: ", _regions,
 						", locations: ", _region_locations, ". Please report this error.");
 				return;
 			}
@@ -522,7 +524,7 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 	}
 
 	if (_generated_control_maps.is_dirty()) {
-		LOG(EXTREME, "Regenerating control texture array from regions");
+		TERRAINLOG(EXTREME, "Regenerating control texture array from regions");
 		_control_maps.clear();
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
@@ -535,7 +537,7 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 	}
 
 	if (_generated_color_maps.is_dirty()) {
-		LOG(EXTREME, "Regenerating color texture array from regions");
+		TERRAINLOG(EXTREME, "Regenerating color texture array from regions");
 		_color_maps.clear();
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
@@ -585,17 +587,17 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 
 void Terrain3DData::set_pixel(const MapType p_map_type, const Vector3 &p_global_position, const Color &p_pixel) {
 	if (p_map_type < 0 || p_map_type >= TYPE_MAX) {
-		LOG(ERROR, "Specified map type out of range");
+		TERRAINLOG(ERROR, "Specified map type out of range");
 		return;
 	}
 	Vector2i region_loc = get_region_location(p_global_position);
 	Ref<Terrain3DRegion> region = get_region(region_loc);
 	if (region.is_null()) {
-		LOG(ERROR, "No active region found at: ", p_global_position);
+		TERRAINLOG(ERROR, "No active region found at: ", p_global_position);
 		return;
 	}
 	if (region->is_deleted()) {
-		LOG(ERROR, "No active region found at: ", p_global_position);
+		TERRAINLOG(ERROR, "No active region found at: ", p_global_position);
 		return;
 	}
 	Vector2i global_offset = region_loc * _region_size;
@@ -609,7 +611,7 @@ void Terrain3DData::set_pixel(const MapType p_map_type, const Vector3 &p_global_
 
 Color Terrain3DData::get_pixel(const MapType p_map_type, const Vector3 &p_global_position) const {
 	if (p_map_type < 0 || p_map_type >= TYPE_MAX) {
-		LOG(ERROR, "Specified map type out of range");
+		TERRAINLOG(ERROR, "Specified map type out of range");
 		return COLOR_NAN;
 	}
 	Vector2i region_loc = get_region_location(p_global_position);
@@ -764,7 +766,7 @@ Vector3 Terrain3DData::get_texture_id(const Vector3 &p_global_position) const {
  * p_global_position: X and Z coordinates of the vertex. Heights will be sampled around these coordinates.
  */
 Vector3 Terrain3DData::get_mesh_vertex(const int32_t p_lod, const HeightFilter p_filter, const Vector3 &p_global_position) const {
-	LOG(INFO, "Calculating vertex location");
+	TERRAINLOG(INFO, "Calculating vertex location");
 	int32_t step = 1 << CLAMP(p_lod, 0, 8);
 	real_t height = 0.0f;
 
@@ -813,7 +815,7 @@ void Terrain3DData::calc_height_range(const bool p_recursive) {
 		Vector2i region_loc = _region_locations[i];
 		Ref<Terrain3DRegion> region = get_region(region_loc);
 		if (region.is_null()) {
-			LOG(ERROR, "Region not found at: ", region_loc);
+			TERRAINLOG(ERROR, "Region not found at: ", region_loc);
 			return;
 		}
 		if (p_recursive) {
@@ -821,7 +823,7 @@ void Terrain3DData::calc_height_range(const bool p_recursive) {
 		}
 		update_master_heights(region->get_height_range());
 	}
-	LOG(EXTREME, "Accumulated height range for all regions: ", _master_height_range);
+	TERRAINLOG(EXTREME, "Accumulated height range for all regions: ", _master_height_range);
 }
 
 /**
@@ -836,7 +838,7 @@ void Terrain3DData::calc_height_range(const bool p_recursive) {
 void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vector3 &p_global_position, const real_t p_offset, const real_t p_scale) {
 	IS_INIT_MESG("Data not initialized", VOID);
 	if (p_images.size() != TYPE_MAX) {
-		LOG(ERROR, "p_images.size() is ", p_images.size(), ". It should be ", TYPE_MAX, " even if some Images are blank or null");
+		TERRAINLOG(ERROR, "p_images.size() is ", p_images.size(), ". It should be ", TYPE_MAX, " even if some Images are blank or null");
 		return;
 	}
 
@@ -844,32 +846,32 @@ void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vecto
 	for (int i = 0; i < TYPE_MAX; i++) {
 		Ref<Image> img = p_images[i];
 		if (img.is_valid() && !img->is_empty()) {
-			LOG(INFO, "Importing image type ", TYPESTR[i], ", size: ", img->get_size(), ", format: ", img->get_format());
+			TERRAINLOG(INFO, "Importing image type ", TYPESTR[i], ", size: ", img->get_size(), ", format: ", img->get_format());
 			if (i == TYPE_HEIGHT) {
-				LOG(INFO, "Applying offset: ", p_offset, ", scale: ", p_scale);
+				TERRAINLOG(INFO, "Applying offset: ", p_offset, ", scale: ", p_scale);
 			}
 			if (img_size == V2I_ZERO) {
 				img_size = img->get_size();
 			} else if (img_size != img->get_size()) {
-				LOG(ERROR, "Included Images in p_images have different dimensions. Aborting import");
+				TERRAINLOG(ERROR, "Included Images in p_images have different dimensions. Aborting import");
 				return;
 			}
 		}
 	}
 	if (img_size == V2I_ZERO) {
-		LOG(ERROR, "All images are empty. Nothing to import");
+		TERRAINLOG(ERROR, "All images are empty. Nothing to import");
 		return;
 	}
 
 	Vector3 descaled_position = p_global_position / _vertex_spacing;
 	int max_dimension = _region_size * REGION_MAP_SIZE / 2;
 	if ((abs(descaled_position.x) > max_dimension) || (abs(descaled_position.z) > max_dimension)) {
-		LOG(ERROR, "Specify a position within +/-", Vector3(max_dimension, 0.f, max_dimension) * _vertex_spacing);
+		TERRAINLOG(ERROR, "Specify a position within +/-", Vector3(max_dimension, 0.f, max_dimension) * _vertex_spacing);
 		return;
 	}
 	if ((descaled_position.x + img_size.x > max_dimension) ||
 			(descaled_position.z + img_size.y > max_dimension)) {
-		LOG(ERROR, img_size, " image will not fit at ", p_global_position,
+		TERRAINLOG(ERROR, img_size, " image will not fit at ", p_global_position,
 				". Try ", -(img_size * _vertex_spacing) / 2.f, " to center");
 		return;
 	}
@@ -886,7 +888,7 @@ void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vecto
 
 		// Apply scale and offsets to a new heightmap if applicable
 		if (i == TYPE_HEIGHT && (p_offset != 0.f || p_scale != 1.f)) {
-			LOG(DEBUG, "Creating new temp image to adjust scale: ", p_scale, " offset: ", p_offset);
+			TERRAINLOG(DEBUG, "Creating new temp image to adjust scale: ", p_scale, " offset: ", p_offset);
 			Ref<Image> newimg = Image::create_empty(img->get_size().x, img->get_size().y, false, FORMAT[TYPE_HEIGHT]);
 			for (int y = 0; y < img->get_height(); y++) {
 				for (int x = 0; x < img->get_width(); x++) {
@@ -904,13 +906,13 @@ void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vecto
 	int slices_height = ceil(real_t(img_size.y) / real_t(_region_size));
 	slices_width = CLAMP(slices_width, 1, REGION_MAP_SIZE);
 	slices_height = CLAMP(slices_height, 1, REGION_MAP_SIZE);
-	LOG(DEBUG, "Creating ", Vector2i(slices_width, slices_height), " slices for ", img_size, " images.");
+	TERRAINLOG(DEBUG, "Creating ", Vector2i(slices_width, slices_height), " slices for ", img_size, " images.");
 
 	for (int y = 0; y < slices_height; y++) {
 		for (int x = 0; x < slices_width; x++) {
 			Vector2i start_coords = Vector2i(x * _region_size, y * _region_size);
 			Vector2i end_coords = Vector2i((x + 1) * _region_size, (y + 1) * _region_size);
-			LOG(DEBUG, "Reviewing image section ", start_coords, " to ", end_coords);
+			TERRAINLOG(DEBUG, "Reviewing image section ", start_coords, " to ", end_coords);
 
 			Vector2i size_to_copy;
 			if (end_coords.x <= img_size.x && end_coords.y <= img_size.y) {
@@ -918,10 +920,10 @@ void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vecto
 			} else {
 				size_to_copy.x = img_size.x - start_coords.x;
 				size_to_copy.y = img_size.y - start_coords.y;
-				LOG(DEBUG, "Uneven end piece. Copying padded slice ", Vector2i(x, y), " size to copy: ", size_to_copy);
+				TERRAINLOG(DEBUG, "Uneven end piece. Copying padded slice ", Vector2i(x, y), " size to copy: ", size_to_copy);
 			}
 
-			LOG(DEBUG, "Copying ", size_to_copy, " sized segment");
+			TERRAINLOG(DEBUG, "Copying ", size_to_copy, " sized segment");
 			TypedArray<Image> images;
 			images.resize(TYPE_MAX);
 			for (int i = 0; i < TYPE_MAX; i++) {
@@ -954,17 +956,17 @@ void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vecto
  */
 Error Terrain3DData::export_image(const String &p_file_name, const MapType p_map_type) const {
 	if (p_map_type < 0 || p_map_type >= TYPE_MAX) {
-		LOG(ERROR, "Invalid map type specified: ", p_map_type, " max: ", TYPE_MAX - 1);
+		TERRAINLOG(ERROR, "Invalid map type specified: ", p_map_type, " max: ", TYPE_MAX - 1);
 		return FAILED;
 	}
 
 	if (p_file_name.is_empty()) {
-		LOG(ERROR, "No file specified. Nothing to export");
+		TERRAINLOG(ERROR, "No file specified. Nothing to export");
 		return FAILED;
 	}
 
 	if (get_region_count() == 0) {
-		LOG(ERROR, "No valid regions. Nothing to export");
+		TERRAINLOG(ERROR, "No valid regions. Nothing to export");
 		return FAILED;
 	}
 
@@ -973,7 +975,7 @@ Error Terrain3DData::export_image(const String &p_file_name, const MapType p_map
 	for (int i = 0; i < bad_chars.length(); ++i) {
 		for (int j = 0; j < p_file_name.length(); ++j) {
 			if (bad_chars[i] == p_file_name[j]) {
-				LOG(ERROR, "Invalid file path '" + p_file_name + "'");
+				TERRAINLOG(ERROR, "Invalid file path '" + p_file_name + "'");
 				return FAILED;
 			}
 		}
@@ -998,7 +1000,7 @@ Error Terrain3DData::export_image(const String &p_file_name, const MapType p_map
 	// Check if the file can be opened for writing
 	Ref<FileAccess> file_ref = FileAccess::open(file_name, FileAccess::ModeFlags::WRITE);
 	if (file_ref.is_null()) {
-		LOG(ERROR, "Cannot open file '" + file_name + "' for writing");
+		TERRAINLOG(ERROR, "Cannot open file '" + file_name + "' for writing");
 		return FAILED;
 	}
 	file_ref->close();
@@ -1006,15 +1008,15 @@ Error Terrain3DData::export_image(const String &p_file_name, const MapType p_map
 	// Filename is validated. Begin export image generation
 	Ref<Image> img = layered_to_image(p_map_type);
 	if (img.is_null() || img->is_empty()) {
-		LOG(ERROR, "Cannot create an export image for map type: ", TYPESTR[p_map_type]);
+		TERRAINLOG(ERROR, "Cannot create an export image for map type: ", TYPESTR[p_map_type]);
 		return FAILED;
 	}
 
 	String ext = file_name.get_extension().to_lower();
-	LOG(MESG, "Saving ", img->get_size(), " sized ", TYPESTR[p_map_type],
+	TERRAINLOG(MESG, "Saving ", img->get_size(), " sized ", TYPESTR[p_map_type],
 			" map in format ", img->get_format(), " as ", ext, " to: ", file_name);
 	Vector2i minmax = Util::get_min_max(img);
-	LOG(MESG, "Minimum height: ", minmax.x, ", Maximum height: ", minmax.y);
+	TERRAINLOG(MESG, "Minimum height: ", minmax.x, ", Maximum height: ", minmax.y);
 	if (ext == "r16" || ext == "raw") {
 		Ref<FileAccess> file = FileAccess::open(file_name, FileAccess::WRITE);
 		real_t height_min = minmax.x;
@@ -1037,15 +1039,15 @@ Error Terrain3DData::export_image(const String &p_file_name, const MapType p_map
 	} else if (ext == "webp") {
 		return img->save_webp(file_name);
 	} else if ((ext == "res") || (ext == "tres")) {
-		return ResourceSaver::get_singleton()->save(img, file_name, ResourceSaver::FLAG_COMPRESS);
+		return ResourceSaver::save(img, file_name, ResourceSaver::FLAG_COMPRESS);
 	}
 
-	LOG(ERROR, "No recognized file type. See docs for valid extensions");
+	TERRAINLOG(ERROR, "No recognized file type. See docs for valid extensions");
 	return FAILED;
 }
 
 Ref<Image> Terrain3DData::layered_to_image(const MapType p_map_type) const {
-	LOG(INFO, "Generating a full sized image for all regions including empty regions");
+	TERRAINLOG(INFO, "Generating a full sized image for all regions including empty regions");
 	MapType map_type = p_map_type;
 	if (map_type >= TYPE_MAX) {
 		map_type = TYPE_HEIGHT;
@@ -1053,7 +1055,7 @@ Ref<Image> Terrain3DData::layered_to_image(const MapType p_map_type) const {
 	Vector2i top_left = V2I_ZERO;
 	Vector2i bottom_right = V2I_ZERO;
 	for (int i = 0; i < _region_locations.size(); i++) {
-		LOG(DEBUG, "Region locations[", i, "]: ", _region_locations[i]);
+		TERRAINLOG(DEBUG, "Region locations[", i, "]: ", _region_locations[i]);
 		Vector2i region_loc = _region_locations[i];
 		if (region_loc.x < top_left.x) {
 			top_left.x = region_loc.x;
@@ -1067,15 +1069,15 @@ Ref<Image> Terrain3DData::layered_to_image(const MapType p_map_type) const {
 		}
 	}
 
-	LOG(DEBUG, "Full range to cover all regions: ", top_left, " to ", bottom_right);
+	TERRAINLOG(DEBUG, "Full range to cover all regions: ", top_left, " to ", bottom_right);
 	Vector2i img_size = Vector2i(1 + bottom_right.x - top_left.x, 1 + bottom_right.y - top_left.y) * _region_size;
-	LOG(DEBUG, "Image size: ", img_size);
+	TERRAINLOG(DEBUG, "Image size: ", img_size);
 	Ref<Image> img = Util::get_filled_image(img_size, COLOR[map_type], false, FORMAT[map_type]);
 
 	for (int i = 0; i < _region_locations.size(); i++) {
 		Vector2i region_loc = _region_locations[i];
 		Vector2i img_location = (region_loc - top_left) * _region_size;
-		LOG(DEBUG, "Region to blit: ", region_loc, " Export image coords: ", img_location);
+		TERRAINLOG(DEBUG, "Region to blit: ", region_loc, " Export image coords: ", img_location);
 		Ref<Terrain3DRegion> region = get_region(region_loc);
 		img->blit_rect(region->get_map(map_type), Rect2i(V2I_ZERO, _region_sizev), img_location);
 	}
@@ -1083,21 +1085,21 @@ Ref<Image> Terrain3DData::layered_to_image(const MapType p_map_type) const {
 }
 
 void Terrain3DData::print_audit_data() const {
-	LOG(INFO, "Dumping data");
-	LOG(INFO, "Region_locations size: ", _region_locations.size(), " ", _region_locations);
-	LOG(INFO, "Region map");
+	TERRAINLOG(INFO, "Dumping data");
+	TERRAINLOG(INFO, "Region_locations size: ", _region_locations.size(), " ", _region_locations);
+	TERRAINLOG(INFO, "Region map");
 	for (int i = 0; i < _region_map.size(); i++) {
 		if (_region_map[i]) {
-			LOG(INFO, "Region id: ", _region_map[i], " array index: ", i);
+			TERRAINLOG(INFO, "Region id: ", _region_map[i], " array index: ", i);
 		}
 	}
 	Util::dump_maps(_height_maps, "Height maps");
 	Util::dump_maps(_control_maps, "Control maps");
 	Util::dump_maps(_color_maps, "Color maps");
 
-	Util::dump_gentex(_generated_height_maps, "height");
-	Util::dump_gentex(_generated_control_maps, "control");
-	Util::dump_gentex(_generated_color_maps, "color");
+	// Util::dump_gentex(_generated_height_maps, "height");
+	// Util::dump_gentex(_generated_control_maps, "control");
+	// Util::dump_gentex(_generated_color_maps, "color");
 }
 
 ///////////////////////////
@@ -1197,10 +1199,10 @@ void Terrain3DData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("layered_to_image", "map_type"), &Terrain3DData::layered_to_image);
 
 	int ro_flags = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY;
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "region_locations", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::VECTOR2, PROPERTY_HINT_NONE), ro_flags), "set_region_locations", "get_region_locations");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "height_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_height_maps");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "control_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_control_maps");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "color_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_color_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "region_locations", PROPERTY_HINT_ARRAY_TYPE, vformat("%s/%s", Variant::VECTOR2, PROPERTY_HINT_NONE), ro_flags), "set_region_locations", "get_region_locations");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "height_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_height_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "control_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_control_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "color_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_color_maps");
 
 	ADD_SIGNAL(MethodInfo("maps_changed"));
 	ADD_SIGNAL(MethodInfo("region_map_changed"));

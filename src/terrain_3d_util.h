@@ -3,11 +3,10 @@
 #ifndef TERRAIN3D_UTIL_CLASS_H
 #define TERRAIN3D_UTIL_CLASS_H
 
-#include <godot_cpp/classes/image.hpp>
-#include <godot_cpp/classes/resource_loader.hpp>
-
 #include "constants.h"
 #include "generated_texture.h"
+#include "core/io/resource_loader.h"
+#include "scene/main/node.h"
 
 using namespace godot;
 
@@ -41,7 +40,7 @@ public:
 			const Color &p_color = COLOR_BLACK,
 			const bool p_create_mipmaps = true,
 			const Image::Format p_format = Image::FORMAT_MAX);
-	static Ref<Image> load_image(const String &p_file_name, const int p_cache_mode = ResourceLoader::CACHE_MODE_IGNORE,
+	static Ref<Image> load_image(const String &p_file_name, const int p_cache_mode = ResourceFormatLoader::CACHE_MODE_IGNORE,
 			const Vector2 &p_r16_height_range = Vector2(0.f, 255.f), const Vector2i &p_r16_size = V2I_ZERO);
 	static Ref<Image> pack_image(const Ref<Image> &p_src_rgb,
 			const Ref<Image> &p_src_a,
@@ -214,7 +213,7 @@ _FORCE_INLINE_ bool remove_from_tree(Node *p_node) {
 // Use this version instead on objects that might be freed by the user.
 // See https://github.com/godotengine/godot-cpp/issues/1390#issuecomment-1937570699
 _FORCE_INLINE_ bool is_instance_valid(const uint64_t p_instance_id, Object *p_object = nullptr) {
-	Object *obj = ObjectDB::get_instance(p_instance_id);
+	Object *obj = ObjectDB::get_instance(ObjectID(p_instance_id));
 	if (p_object != nullptr) {
 		return p_instance_id > 0 && p_object == obj;
 	} else {

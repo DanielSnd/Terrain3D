@@ -1,8 +1,5 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include <godot_cpp/classes/image.hpp>
-
-#include "logger.h"
 #include "terrain_3d_texture_asset.h"
 
 ///////////////////////////
@@ -12,7 +9,7 @@
 // Note a null texture is considered a valid format
 bool Terrain3DTextureAsset::_is_valid_format(const Ref<Texture2D> &p_texture) const {
 	if (p_texture.is_null()) {
-		LOG(DEBUG, "Provided texture is null.");
+		TERRAINLOG(DEBUG, "Provided texture is null.");
 		return true;
 	}
 
@@ -22,7 +19,7 @@ bool Terrain3DTextureAsset::_is_valid_format(const Ref<Texture2D> &p_texture) co
 		format = img->get_format();
 	}
 	if (format < 0 || format >= Image::FORMAT_MAX) {
-		LOG(ERROR, "Invalid texture format. See documentation for format specification.");
+		TERRAINLOG(ERROR, "Invalid texture format. See documentation for format specification.");
 		return false;
 	}
 
@@ -43,39 +40,39 @@ void Terrain3DTextureAsset::clear() {
 	_detiling = 0.0f;
 }
 
-void Terrain3DTextureAsset::set_name(const String &p_name) {
-	LOG(INFO, "Setting name: ", p_name);
-	_name = p_name;
-	emit_signal("setting_changed");
-}
+// void Terrain3DTextureAsset::set_name(const String &p_name) {
+// 	TERRAINLOG(INFO, "Setting name: ", p_name);
+// 	_name = p_name;
+// 	emit_signal("setting_changed");
+// }
 
 void Terrain3DTextureAsset::set_id(const int p_new_id) {
 	int old_id = _id;
-	_id = CLAMP(p_new_id, 0, Terrain3DAssets::MAX_TEXTURES);
-	LOG(INFO, "Setting texture id: ", _id);
-	emit_signal("id_changed", Terrain3DAssets::TYPE_TEXTURE, old_id, _id);
+	_id = CLAMP(p_new_id, 0, Terrain3DLogger::MAX_TEXTURES);
+	TERRAINLOG(INFO, "Setting texture id: ", _id);
+	emit_signal("id_changed", Terrain3DLogger::TYPE_TEXTURE, old_id, _id);
 }
 
 void Terrain3DTextureAsset::set_albedo_color(const Color &p_color) {
-	LOG(INFO, "Setting color: ", p_color);
+	TERRAINLOG(INFO, "Setting color: ", p_color);
 	_albedo_color = p_color;
 	emit_signal("setting_changed");
 }
 
 void Terrain3DTextureAsset::set_albedo_texture(const Ref<Texture2D> &p_texture) {
-	LOG(INFO, "Setting albedo texture: ", p_texture);
+	TERRAINLOG(INFO, "Setting albedo texture: ", p_texture);
 	if (_is_valid_format(p_texture)) {
 		_albedo_texture = p_texture;
 		if (p_texture.is_valid() && _name == "New Texture") {
 			_name = p_texture->get_path().get_file().get_basename();
-			LOG(INFO, "Naming texture based on filename: ", _name);
+			TERRAINLOG(INFO, "Naming texture based on filename: ", _name);
 		}
 		emit_signal("file_changed");
 	}
 }
 
 void Terrain3DTextureAsset::set_normal_texture(const Ref<Texture2D> &p_texture) {
-	LOG(INFO, "Setting normal texture: ", p_texture);
+	TERRAINLOG(INFO, "Setting normal texture: ", p_texture);
 	if (_is_valid_format(p_texture)) {
 		_normal_texture = p_texture;
 		emit_signal("file_changed");
@@ -84,13 +81,13 @@ void Terrain3DTextureAsset::set_normal_texture(const Ref<Texture2D> &p_texture) 
 
 void Terrain3DTextureAsset::set_uv_scale(const real_t p_scale) {
 	_uv_scale = CLAMP(p_scale, .001f, 2.f);
-	LOG(INFO, "Setting uv_scale: ", _uv_scale);
+	TERRAINLOG(INFO, "Setting uv_scale: ", _uv_scale);
 	emit_signal("setting_changed");
 }
 
 void Terrain3DTextureAsset::set_detiling(const real_t p_detiling) {
 	_detiling = CLAMP(p_detiling, 0.0f, 1.0f);
-	LOG(INFO, "Setting detiling: ", _detiling);
+	TERRAINLOG(INFO, "Setting detiling: ", _detiling);
 	emit_signal("setting_changed");
 }
 
@@ -104,8 +101,8 @@ void Terrain3DTextureAsset::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("setting_changed"));
 
 	ClassDB::bind_method(D_METHOD("clear"), &Terrain3DTextureAsset::clear);
-	ClassDB::bind_method(D_METHOD("set_name", "name"), &Terrain3DTextureAsset::set_name);
-	ClassDB::bind_method(D_METHOD("get_name"), &Terrain3DTextureAsset::get_name);
+	// ClassDB::bind_method(D_METHOD("set_name", "name"), &Terrain3DTextureAsset::set_name);
+	// ClassDB::bind_method(D_METHOD("get_name"), &Terrain3DTextureAsset::get_name);
 	ClassDB::bind_method(D_METHOD("set_id", "id"), &Terrain3DTextureAsset::set_id);
 	ClassDB::bind_method(D_METHOD("get_id"), &Terrain3DTextureAsset::get_id);
 	ClassDB::bind_method(D_METHOD("set_albedo_color", "color"), &Terrain3DTextureAsset::set_albedo_color);
@@ -119,7 +116,7 @@ void Terrain3DTextureAsset::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_detiling", "detiling"), &Terrain3DTextureAsset::set_detiling);
 	ClassDB::bind_method(D_METHOD("get_detiling"), &Terrain3DTextureAsset::get_detiling);
 
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name", PROPERTY_HINT_NONE), "set_name", "get_name");
+	// ADD_PROPERTY(PropertyInfo(Variant::STRING, "name", PROPERTY_HINT_NONE), "set_name", "get_name");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "id", PROPERTY_HINT_NONE), "set_id", "get_id");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "albedo_color", PROPERTY_HINT_COLOR_NO_ALPHA), "set_albedo_color", "get_albedo_color");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "albedo_texture", PROPERTY_HINT_RESOURCE_TYPE, "ImageTexture,CompressedTexture2D"), "set_albedo_texture", "get_albedo_texture");
