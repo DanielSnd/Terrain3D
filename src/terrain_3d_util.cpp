@@ -2,6 +2,7 @@
 
 #include "logger.h"
 #include "terrain_3d_util.h"
+#include "terrain_3d_region.h"
 
 ///////////////////////////
 // Public Functions

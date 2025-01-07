@@ -3,9 +3,14 @@
 
 #include "logger.h"
 #include "terrain_3d_material.h"
+#include "terrain_3d.h"
+#ifdef TOOLS_ENABLED
+#include "terrain_3d_editor.h"
+#endif
 #include "terrain_3d_util.h"
 #include "modules/noise/fastnoise_lite.h"
 #include "modules/noise/noise_texture_2d.h"
+#include "terrain_3d_texture_asset.h"
 
 ///////////////////////////
 // Private Functions
@@ -37,7 +42,7 @@ void Terrain3DMaterial::_preload_shaders() {
 #include "shaders/main.glsl"
 	);
 
-	if (Terrain3D::debug_level >= DEBUG) {
+	if (Terrain3DLogger::get_debug_level() >= DEBUG) {
 		Array keys = _shader_code.keys();
 		for (int i = 0; i < keys.size(); i++) {
 			TERRAINLOG(DEBUG, "Loaded shader insert: ", keys[i]);
@@ -241,9 +246,11 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 	if (_debug_view_vertex_grid) {
 		insert_names.push_back("DEBUG_VERTEX_GRID");
 	}
+	#ifdef TOOLS_ENABLED
 	if (_show_navigation || (IS_EDITOR && _terrain && _terrain->get_editor() && _terrain->get_editor()->get_tool() == Terrain3DEditor::NAVIGATION)) {
 		insert_names.push_back("EDITOR_NAVIGATION");
 	}
+	#endif
 	if (_compatibility) {
 		insert_names.push_back("EDITOR_RENDER_DECAL");
 	}
@@ -380,7 +387,7 @@ void Terrain3DMaterial::_update_maps() {
 	}
 	RenderingServer::get_singleton()->material_set_param(_material, "_region_map", region_map);
 	RenderingServer::get_singleton()->material_set_param(_material, "_region_map_size", Terrain3DData::REGION_MAP_SIZE);
-	if (Terrain3D::debug_level >= EXTREME) {
+	if (Terrain3DLogger::get_debug_level() >= EXTREME) {
 		TERRAINLOG(EXTREME, "Region map");
 		for (int i = 0; i < region_map.size(); i++) {
 			if (region_map[i]) {
@@ -635,7 +642,7 @@ void Terrain3DMaterial::set_show_region_grid(const bool p_enabled) {
 }
 
 void Terrain3DMaterial::set_show_instancer_grid(const bool p_enabled) {
-	LOG(INFO, "Enable show_instancer_grid: ", p_enabled);
+	TERRAINLOG(INFO, "Enable show_instancer_grid: ", p_enabled);
 	_debug_view_instancer_grid = p_enabled;
 	_update_shader();
 }
@@ -653,7 +660,7 @@ Error Terrain3DMaterial::save(const String &p_path) {
 	}
 	if (!p_path.is_empty()) {
 		TERRAINLOG(DEBUG, "Setting file path to ", p_path);
-		take_over_path(p_path);
+		_take_over_path(p_path);
 	}
 
 	TERRAINLOG(DEBUG, "Generating parameter list from shaders");
@@ -701,7 +708,7 @@ Error Terrain3DMaterial::save(const String &p_path) {
 	String path = get_path();
 	if (path.get_extension() == "tres" || path.get_extension() == "res") {
 		TERRAINLOG(DEBUG, "Attempting to save external file: " + path);
-		err = ResourceSaver::get_singleton()->save(this, path, ResourceSaver::FLAG_COMPRESS);
+		err = ResourceSaver::save(this, path, ResourceSaver::FLAG_COMPRESS);
 		if (err == OK) {
 			TERRAINLOG(INFO, "File saved successfully: ", path);
 		} else {

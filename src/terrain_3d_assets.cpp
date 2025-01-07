@@ -1,9 +1,7 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include "logger.h"
 #include "terrain_3d_assets.h"
-#include "terrain_3d_util.h"
-#include "scene/resources/image_texture.h"
+#include "terrain_3d.h"
 
 ///////////////////////////
 // Private Functions
@@ -297,7 +295,7 @@ void Terrain3DAssets::_update_texture_files() {
 					warn_compatibility_decompress = true;
 					img->decompress();
 				}
-				print_line(DEBUG, "ID ", i, " Normal texture is valid. Format: ", img->get_format());
+				TERRAINLOG(DEBUG, "ID ", i, " Normal texture is valid. Format: ", img->get_format());
 			}
 			normal_texture_array.push_back(img);
 		}
@@ -307,7 +305,7 @@ void Terrain3DAssets::_update_texture_files() {
 	}
 	//DEPRECATED 1.0 - remove in Godot 4.4
 	if (warn_compatibility_decompress == true) {
-		LOG(WARN, "Textures were decompressed for the Compatibility renderer. Decompress in the Import panel to remove this warning. See Supported Renderers doc.");
+		TERRAINLOG(WARN, "Textures were decompressed for the Compatibility renderer. Decompress in the Import panel to remove this warning. See Supported Renderers doc.");
 	}
 	emit_signal("textures_changed");
 }
@@ -538,7 +536,7 @@ void Terrain3DAssets::update_mesh_list() {
 			continue;
 		}
 		if (mesh_asset->get_mesh().is_null()) {
-			LOG(DEBUG, "Terrain3DMeshAsset has no mesh, adding a default");
+			TERRAINLOG(DEBUG, "Terrain3DMeshAsset has no mesh, adding a default");
 			mesh_asset->set_generated_type(Terrain3DMeshAsset::TYPE_TEXTURE_CARD);
 		}
 		if (!mesh_asset->is_connected("file_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list))) {
@@ -573,7 +571,7 @@ Error Terrain3DAssets::save(const String &p_path) {
 	}
 	if (!p_path.is_empty()) {
 		TERRAINLOG(DEBUG, "Setting file path to ", p_path);
-		take_over_path(p_path);
+		_take_over_path(p_path);
 	}
 	// Save to external resource file if specified
 	Error err = OK;

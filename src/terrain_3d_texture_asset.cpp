@@ -1,6 +1,5 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include "logger.h"
 #include "terrain_3d_texture_asset.h"
 
 ///////////////////////////
@@ -49,9 +48,9 @@ void Terrain3DTextureAsset::clear() {
 
 void Terrain3DTextureAsset::set_id(const int p_new_id) {
 	int old_id = _id;
-	_id = CLAMP(p_new_id, 0, Terrain3DAssets::MAX_TEXTURES);
+	_id = CLAMP(p_new_id, 0, Terrain3DLogger::MAX_TEXTURES);
 	TERRAINLOG(INFO, "Setting texture id: ", _id);
-	emit_signal("id_changed", Terrain3DAssets::TYPE_TEXTURE, old_id, _id);
+	emit_signal("id_changed", Terrain3DLogger::TYPE_TEXTURE, old_id, _id);
 }
 
 void Terrain3DTextureAsset::set_albedo_color(const Color &p_color) {

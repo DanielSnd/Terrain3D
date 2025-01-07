@@ -5,9 +5,11 @@
 #include "core/templates/vector.h"
 #include "core/templates/hash_map.h"
 #include "servers/rendering_server.h"
+#include "scene/resources/mesh.h"
 
 #include "geoclipmap.h"
 #include "logger.h"
+#include "terrain_3d.h"
 
 ///////////////////////////
 // Private Functions
@@ -15,6 +17,15 @@
 
 // Half each triangle, have to check for longest side.
 void GeoClipMap::_subdivide_half(Vector<Vector3> &vertices, Vector<int> &indices) {
+
+
+	struct Vector3Hash {
+		_FORCE_INLINE_ static uint32_t hash(const Vector3 &v)  {
+			uint32_t hash = hash_djb2_one_float(v.x);
+			hash = hash_djb2_one_float(v.y, hash);
+			return hash_djb2_one_float(v.z, hash);
+		}
+	};
 
 	Vector<Vector3> new_vertices;
 	Vector<int> new_indices;
@@ -158,7 +169,7 @@ Vector<RID> GeoClipMap::generate(const int p_size, const int p_levels) {
 	int PATCH_VERT_RESOLUTION = TILE_RESOLUTION + 1;
 	int CLIPMAP_RESOLUTION = TILE_RESOLUTION * 4 + 1;
 	int CLIPMAP_VERT_RESOLUTION = CLIPMAP_RESOLUTION + 1;
-	int NUM_CLIPMAP_LEVELS = p_levels;
+	//int NUM_CLIPMAP_LEVELS = p_levels;
 	AABB aabb;
 	int n = 0;
 

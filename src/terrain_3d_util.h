@@ -5,6 +5,8 @@
 
 #include "constants.h"
 #include "generated_texture.h"
+#include "core/io/resource_loader.h"
+#include "scene/main/node.h"
 
 using namespace godot;
 

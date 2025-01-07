@@ -1,13 +1,15 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include "terrain_3d.h"
+#ifdef TOOLS_ENABLED
+#include "editor/editor_interface.h"
+#endif
 
 ///////////////////////////
 // Private Functions
 ///////////////////////////
 
 // Initialize static member variable
-int Terrain3D::debug_level{ ERROR };
 
 void Terrain3D::_initialize() {
 	TERRAINLOG(INFO, "Checking initialization of main subsystems");
@@ -105,13 +107,17 @@ void Terrain3D::__process(const double p_delta) {
  * The edited_scene_root is excluded in case the user already has a Camera3D in their scene.
  */
 void Terrain3D::_grab_camera() {
+	#ifdef TOOLS_ENABLED
 	if (IS_EDITOR) {
 		_camera = EditorInterface::get_singleton()->get_editor_viewport_3d(0)->get_camera_3d();
 		TERRAINLOG(DEBUG, "Grabbing the first editor viewport camera: ", _camera);
 	} else {
+		#endif
 		_camera = get_viewport()->get_camera_3d();
 		TERRAINLOG(DEBUG, "Grabbing the in-game viewport camera: ", _camera);
+		#ifdef TOOLS_ENABLED
 	}
+	#endif
 	if (_camera) {
 		_camera_instance_id = _camera->get_instance_id();
 	} else {
@@ -136,7 +142,7 @@ void Terrain3D::_destroy_containers() {
 }
 
 void Terrain3D::_destroy_labels() {
-	Array labels = _label_nodes->get_children();
+	Array labels = _label_parent->get_children();
 	TERRAINLOG(DEBUG, "Destroying ", labels.size(), " region labels");
 	for (int i = 0; i < labels.size(); i++) {
 		Node *label = cast_to<Node>(labels[i]);
@@ -242,7 +248,7 @@ void Terrain3D::_update_collision() {
 
 				// Set heights on local map, or adjacent maps if on the last row/col
 				if (x < _region_size && z < _region_size) {
-					map_data[index] = (is_hole(cmap->get_pixel(x, z).r)) ? NAN : map->get_pixel(x, z).r;
+					map_data.write[index] = (is_hole(cmap->get_pixel(x, z).r)) ? NAN : map->get_pixel(x, z).r;
 				} else if (x == _region_size && z < _region_size) {
 					if (map_x.is_valid()) {
 						map_data.write[index] = (is_hole(cmap_x->get_pixel(0, z).r)) ? NAN : map_x->get_pixel(0, z).r;
@@ -728,7 +734,7 @@ Terrain3D::Terrain3D() {
 
 void Terrain3D::set_debug_level(const int p_level) {
 	TERRAINLOG(INFO, "Setting debug level: ", p_level);
-	debug_level = CLAMP(p_level, 0, EXTREME);
+	Terrain3DLogger::set_debug_level(CLAMP(p_level, 0, EXTREME));
 }
 
 void Terrain3D::set_data_directory(String p_dir) {

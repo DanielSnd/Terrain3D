@@ -3,10 +3,22 @@
 #ifndef LOGGER_CLASS_H
 #define LOGGER_CLASS_H
 
-#include "terrain_3d.h"
+#include "core/string/print_string.h"
 
-using namespace godot;
+class Terrain3DLogger {
+private:
+    static int debug_level;
 
+public:
+    enum AssetType {
+		TYPE_TEXTURE,
+		TYPE_MESH,
+	};
+    static inline const int MAX_TEXTURES = 32;
+	static inline const int MAX_MESHES = 256;
+    static void set_debug_level(int level) { debug_level = level; }
+    static int get_debug_level() { return debug_level; }
+};
 /**
  * Prints warnings, errors, and regular messages to the console.
  * Regular messages are filtered based on the user specified debug level.
@@ -30,7 +42,7 @@ if (level == ERROR)                                                             
 print_line("ERROR", __VA_ARGS__);   \
 else if (level == WARN)                                                          \
 print_line("WARNING", __VA_ARGS__); \
-else if (Terrain3D::debug_level >= level)                                        \
+else if (Terrain3DLogger::get_debug_level() >= level)                                        \
 print_line(__VA_ARGS__);
 #else
 #define TERRAINLOG(...)

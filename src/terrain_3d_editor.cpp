@@ -1,12 +1,16 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
+
+#ifdef TOOLS_ENABLED
 #include "logger.h"
+#include "terrain_3d.h"
 #include "terrain_3d_data.h"
 #include "terrain_3d_editor.h"
 #include "terrain_3d_util.h"
 #include "core/object/undo_redo.h"
 #include "editor/editor_undo_redo_manager.h"
 
+#include "terrain_3d_texture_asset.h"
 ///////////////////////////
 // Private Functions
 ///////////////////////////
@@ -557,7 +561,7 @@ void Terrain3DEditor::_store_undo() {
 	}
 
 	// Store data in Godot's Undo/Redo Manager
-	EditorUndoRedoManager *undo_redo = _terrain->get_plugin()->get_undo_redo();
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
 	TERRAINLOG(INFO, "Storing undo snapshot");
 	String action_name = String("Terrain3D ") + OPNAME[_operation] + String(" ") + TOOLNAME[_tool];
 	TERRAINLOG(DEBUG, "Creating undo action: '", action_name, "'");
@@ -599,7 +603,7 @@ void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
 	}
 
 	if (p_data.has("edited_area")) {
-		LOG(DEBUG, "Edited area: ", p_data["edited_area"]);
+		TERRAINLOG(DEBUG, "Edited area: ", p_data["edited_area"]);
 		data->add_edited_area(p_data["edited_area"]);
 	}
 
@@ -665,7 +669,7 @@ void Terrain3DEditor::set_brush_data(const Dictionary &p_data) {
 
 	// Sanitize image and textures
 	Array brush_images = p_data["brush"];
-	bool error = false;
+//	bool error = false;
 	if (brush_images.size() == 2) {
 		Ref<Image> img = brush_images[0];
 		if (img.is_valid() && !img->is_empty()) {
@@ -850,3 +854,5 @@ void Terrain3DEditor::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("apply_undo", "data"), &Terrain3DEditor::_apply_undo);
 }
+
+#endif

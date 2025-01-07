@@ -35,7 +35,7 @@ RID GeneratedTexture::create(const TypedArray<Image> &p_layers) {
 		_layers.push_back(img);
 	}
 	if (!p_layers.is_empty()) {
-		if (Terrain3D::debug_level >= DEBUG) {
+		if (Terrain3DLogger::get_debug_level() >= DEBUG) {
 			TERRAINLOG(EXTREME, "RenderingServer creating Texture2DArray, layers size: ", p_layers.size());
 			for (int i = 0; i < p_layers.size(); i++) {
 				Ref<Image> img = p_layers[i];

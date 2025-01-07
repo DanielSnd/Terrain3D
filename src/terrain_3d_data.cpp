@@ -2,8 +2,13 @@
 
 #include "logger.h"
 #include "terrain_3d_data.h"
+#include "terrain_3d.h"
 
+#ifdef TOOLS_ENABLED
 #include "editor/editor_file_system.h"
+#include "editor/editor_interface.h"
+#endif
+#include "terrain_3d_texture_asset.h"
 
 ///////////////////////////
 // Private Functions
@@ -71,7 +76,7 @@ TypedArray<Terrain3DRegion> Terrain3DData::get_regions_active(const bool p_copy,
 		Vector2i region_loc = _region_locations[i];
 		Ref<Terrain3DRegion> region = get_region(region_loc);
 		if (region.is_valid()) {
-			region_arr.push_back((p_copy) ? region->duplicate(p_deep) : region);
+			region_arr.push_back((p_copy) ? static_cast<Ref<Terrain3DRegion>>(region->duplicate(p_deep)) : region);
 		}
 	}
 	return region_arr;
@@ -301,9 +306,11 @@ void Terrain3DData::save_directory(const String &p_dir) {
 	for (int i = 0; i < locations.size(); i++) {
 		save_region(locations[i], p_dir, _terrain->get_save_16_bit());
 	}
+	#ifdef TOOLS_ENABLED
 	if (IS_EDITOR && !EditorInterface::get_singleton()->get_resource_file_system()->is_scanning()) {
 		EditorInterface::get_singleton()->get_resource_file_system()->scan();
 	}
+	#endif
 }
 
 // You may need to do a file system scan to update FileSystem panel
@@ -1009,7 +1016,7 @@ Error Terrain3DData::export_image(const String &p_file_name, const MapType p_map
 	TERRAINLOG(MESG, "Saving ", img->get_size(), " sized ", TYPESTR[p_map_type],
 			" map in format ", img->get_format(), " as ", ext, " to: ", file_name);
 	Vector2i minmax = Util::get_min_max(img);
-	LOG(MESG, "Minimum height: ", minmax.x, ", Maximum height: ", minmax.y);
+	TERRAINLOG(MESG, "Minimum height: ", minmax.x, ", Maximum height: ", minmax.y);
 	if (ext == "r16" || ext == "raw") {
 		Ref<FileAccess> file = FileAccess::open(file_name, FileAccess::WRITE);
 		real_t height_min = minmax.x;

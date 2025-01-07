@@ -1,10 +1,11 @@
-// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include "logger.h"
+
+#include "terrain_3d.h"
 #include "terrain_3d_instancer.h"
 #include "terrain_3d_region.h"
 #include "terrain_3d_util.h"
 
+#include "terrain_3d_texture_asset.h"
 ///////////////////////////
 // Private Functions
 ///////////////////////////
@@ -66,7 +67,7 @@ void Terrain3DInstancer::_update_mmis(const Vector2i &p_region_loc, const int p_
 					continue;
 				}
 				TypedArray<Transform3D> xforms = triple[0];
-				PackedColorArray colors = triple[1];
+				TypedArray<Color> colors = triple[1];
 				bool modified = triple[2];
 				if (xforms.size() == 0) {
 					TERRAINLOG(WARN, "Empty cell in region ", region_loc, " cell ", cell);
@@ -104,7 +105,7 @@ void Terrain3DInstancer::_update_mmis(const Vector2i &p_region_loc, const int p_
 					//mmi->set_visibility_range_end_margin(ma->get_visibility_margin());
 					cell_mmi_dict[cell] = mmi;
 					//Attach to tree
-					Node *node_container = _terrain->get_mmi_parent()->get_node_internal(rname);
+					Node *node_container = _terrain->get_mmi_parent()->get_node_or_null(rname);
 					if (node_container == nullptr) {
 						TERRAINLOG(ERROR, rname, " isn't attached to the tree.");
 						continue;
@@ -242,14 +243,14 @@ void Terrain3DInstancer::_destroy_mmi_by_location(const Vector2i &p_region_loc, 
 	CellMMIDict &cell_mmi_dict = mesh_mmi_dict[mesh_key];
 
 	// Iterate over keys as functions will invalidate standard iterator
-	std::vector<Vector2i> keys;
-	keys.reserve(cell_mmi_dict.size());
+	Vector<Vector2i> keys;
+	keys.resize(cell_mmi_dict.size());
 	int i = 0;
 	for (auto &it : cell_mmi_dict) {
-		keys.push_back(it.first);
+		keys.write[i] = it.first;
 		i++;
 	}
-	for (auto &cell : keys) {
+	for (const Vector2i &cell : keys) {
 		_destroy_mmi_by_cell(p_region_loc, p_mesh_id, cell);
 	}
 }
@@ -269,7 +270,7 @@ void Terrain3DInstancer::_backup_region(const Ref<Terrain3DRegion> &p_region) {
 	}
 }
 
-Ref<MultiMesh> Terrain3DInstancer::_create_multimesh(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const PackedColorArray &p_colors) const {
+Ref<MultiMesh> Terrain3DInstancer::_create_multimesh(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors) const {
 	Ref<MultiMesh> mm;
 	IS_INIT(mm);
 	Ref<Terrain3DMeshAsset> mesh_asset = _terrain->get_assets()->get_mesh_asset(p_mesh_id);
@@ -298,8 +299,8 @@ Ref<MultiMesh> Terrain3DInstancer::_create_multimesh(const int p_mesh_id, const 
 Vector2i Terrain3DInstancer::_get_cell(const Vector3 &p_global_position, const int p_region_size) {
 	real_t vertex_spacing = _terrain->get_vertex_spacing();
 	Vector2i cell;
-	cell.x = UtilityFunctions::posmod(UtilityFunctions::floori(p_global_position.x / vertex_spacing), p_region_size) / CELL_SIZE;
-	cell.y = UtilityFunctions::posmod(UtilityFunctions::floori(p_global_position.z / vertex_spacing), p_region_size) / CELL_SIZE;
+	cell.x = Math::posmod(static_cast<int>(Math::floor(p_global_position.x / vertex_spacing)), p_region_size) / CELL_SIZE;
+	cell.y = Math::posmod(static_cast<int>(Math::floor(p_global_position.z / vertex_spacing)), p_region_size) / CELL_SIZE;
 	return cell;
 }
 
@@ -321,11 +322,11 @@ void Terrain3DInstancer::destroy() {
 	TERRAINLOG(INFO, "Destroying all MMIs");
 
 	// Iterate over keys as subfunction will invalidate standard iterator
-	std::vector<Vector2i> keys;
-	keys.reserve(_mmi_nodes.size());
+	Vector<Vector2i> keys;
+	keys.resize(_mmi_nodes.size());
 	int i = 0;
 	for (auto &it : _mmi_nodes) {
-		keys.push_back(it.first);
+		keys.write[i] = it.first;
 		i++;
 	}
 	int mesh_count = _terrain->get_assets()->get_mesh_count();
@@ -490,8 +491,8 @@ void Terrain3DInstancer::remove_instances(const Vector3 &p_global_position, cons
 	real_t half_brush_size = brush_size * 0.5 + 1.f; // 1m margin
 	real_t radius = brush_size * .4f; // Ring1's inner radius
 	real_t strength = CLAMP(real_t(p_params.get("strength", .1f)), .01f, 100.f); // (premul) 1-10k%
-	real_t fixed_scale = CLAMP(real_t(p_params.get("fixed_scale", 100.f)) * .01f, .01f, 100.f); // 1-10k%
-	real_t random_scale = CLAMP(real_t(p_params.get("random_scale", 0.f)) * .01f, 0.f, 10.f); // +/- 1000%
+	//real_t fixed_scale = CLAMP(real_t(p_params.get("fixed_scale", 100.f)) * .01f, .01f, 100.f); // 1-10k%
+	//real_t random_scale = CLAMP(real_t(p_params.get("random_scale", 0.f)) * .01f, 0.f, 10.f); // +/- 1000%
 
 	Vector2 slope_range = p_params["slope"]; // 0-90 degrees already clamped in Editor
 	bool invert = p_params["modifier_alt"];
@@ -553,8 +554,8 @@ void Terrain3DInstancer::remove_instances(const Vector3 &p_global_position, cons
 					Vector3 cell_pos = Vector3(x, 0.f, z) - global_local_offset;
 					// Manually calculate cell pos without modulus, locations not in the current region will not be found.
 					Vector2i cell_loc;
-					cell_loc.x = UtilityFunctions::floori(cell_pos.x / vertex_spacing) / CELL_SIZE;
-					cell_loc.y = UtilityFunctions::floori(cell_pos.z / vertex_spacing) / CELL_SIZE;
+					cell_loc.x = static_cast<int>(Math::floor(cell_pos.x / vertex_spacing)) / CELL_SIZE;
+					cell_loc.y = static_cast<int>(Math::floor(cell_pos.z / vertex_spacing)) / CELL_SIZE;
 					if (cell_locations.has(cell_loc)) {
 						c_locs[cell_loc] = 1;
 					}
@@ -580,7 +581,7 @@ void Terrain3DInstancer::remove_instances(const Vector3 &p_global_position, cons
 					real_t radial_distance = localised_ring_center.distance_to(Vector2(t.origin.x, t.origin.z));
 					Vector3 height_offset = t.basis.get_column(1) * mesh_height_offset;
 					if (radial_distance < radius &&
-							UtilityFunctions::randf() < CLAMP(0.175f * strength, 0.005f, 10.f) &&
+							Math::randf() < CLAMP(0.175f * strength, 0.005f, 10.f) &&
 							data->is_in_slope(t.origin + global_local_offset - height_offset, slope_range, invert)) {
 						_backup_region(region);
 						continue;
@@ -610,7 +611,7 @@ void Terrain3DInstancer::remove_instances(const Vector3 &p_global_position, cons
 void Terrain3DInstancer::add_multimesh(const int p_mesh_id, const Ref<MultiMesh> &p_multimesh, const Transform3D &p_xform, const bool p_update) {
 	TERRAINLOG(INFO, "Extracting ", p_multimesh->get_instance_count(), " transforms from multimesh");
 	TypedArray<Transform3D> xforms;
-	PackedColorArray colors;
+	TypedArray<Color> colors;
 	for (int i = 0; i < p_multimesh->get_instance_count(); i++) {
 		xforms.push_back(p_xform * p_multimesh->get_instance_transform(i));
 		Color c = COLOR_WHITE;
@@ -623,7 +624,7 @@ void Terrain3DInstancer::add_multimesh(const int p_mesh_id, const Ref<MultiMesh>
 }
 
 // Expects transforms in global space
-void Terrain3DInstancer::add_transforms(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const PackedColorArray &p_colors, const bool p_update) {
+void Terrain3DInstancer::add_transforms(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors, const bool p_update) {
 	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
 	if (p_xforms.size() == 0) {
 		return;
@@ -655,7 +656,7 @@ void Terrain3DInstancer::add_transforms(const int p_mesh_id, const TypedArray<Tr
 			colors_dict[region_loc] = PackedColorArray();
 		}
 		TypedArray<Transform3D> xforms = xforms_dict[region_loc];
-		PackedColorArray colors = colors_dict[region_loc];
+		TypedArray<Color> colors = colors_dict[region_loc];
 		xforms.push_back(trns);
 		colors.push_back(col);
 		colors_dict[region_loc] = colors; // Note similar bug as godot-cpp#1149 needs this for PCA
@@ -666,7 +667,7 @@ void Terrain3DInstancer::add_transforms(const int p_mesh_id, const TypedArray<Tr
 	for (int i = 0; i < region_locations.size(); i++) {
 		Vector2i region_loc = region_locations[i];
 		TypedArray<Transform3D> xforms = xforms_dict[region_loc];
-		PackedColorArray colors = colors_dict[region_loc];
+		TypedArray<Color> colors = colors_dict[region_loc];
 		//LOG(MESG, "Appending ", xforms.size(), " xforms, ", colors, " colors to region location: ", region_loc);
 		append_location(region_loc, p_mesh_id, xforms, colors, p_update);
 	}
@@ -674,7 +675,7 @@ void Terrain3DInstancer::add_transforms(const int p_mesh_id, const TypedArray<Tr
 
 // Appends new global transforms to existing cells, offsetting transforms to region space, scaled by vertex spacing
 void Terrain3DInstancer::append_location(const Vector2i &p_region_loc, const int p_mesh_id,
-		const TypedArray<Transform3D> &p_xforms, const PackedColorArray &p_colors, const bool p_update) {
+		const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors, const bool p_update) {
 	IS_DATA_INIT(VOID);
 	Ref<Terrain3DRegion> region = _terrain->get_data()->get_region(p_region_loc);
 	if (region.is_null()) {
@@ -696,7 +697,7 @@ void Terrain3DInstancer::append_location(const Vector2i &p_region_loc, const int
 
 // append_region requires all transforms are in region space, 0 - region_size * vertex_spacing
 void Terrain3DInstancer::append_region(const Ref<Terrain3DRegion> &p_region, const int p_mesh_id,
-		const TypedArray<Transform3D> &p_xforms, const PackedColorArray &p_colors, const bool p_update) {
+		const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors, const bool p_update) {
 	if (p_region.is_null()) {
 		TERRAINLOG(ERROR, "Null region provided. Doing nothing.");
 		return;
@@ -811,8 +812,8 @@ void Terrain3DInstancer::update_transforms(const AABB &p_aabb) {
 					Vector3 cell_pos = Vector3(x, 0.f, z) - global_local_offset;
 					// Manually calculate cell pos without modulus, locations not in the current region will not be found.
 					Vector2i cell_loc;
-					cell_loc.x = UtilityFunctions::floori(cell_pos.x / vertex_spacing) / CELL_SIZE;
-					cell_loc.y = UtilityFunctions::floori(cell_pos.z / vertex_spacing) / CELL_SIZE;
+					cell_loc.x = static_cast<int>(Math::floor(cell_pos.x / vertex_spacing)) / CELL_SIZE;
+					cell_loc.y = static_cast<int>(Math::floor(cell_pos.z / vertex_spacing)) / CELL_SIZE;
 					if (cell_locations.has(cell_loc)) {
 						c_locs[cell_loc] = 0;
 					}
@@ -902,14 +903,14 @@ void Terrain3DInstancer::copy_paste_dfr(const Terrain3DRegion *p_src_region, con
 	Array mesh_types = mesh_inst_dict.keys();
 	for (int m = 0; m < mesh_types.size(); m++) {
 		TypedArray<Transform3D> xforms;
-		PackedColorArray colors;
+		TypedArray<Color> colors;
 		Dictionary cell_inst_dict = p_src_region->get_instances()[m];
 		Array cell_locs = cell_inst_dict.keys();
 		for (int c = 0; c < cell_locs.size(); c++) {
 			if (cells_to_copy.has(cell_locs[c])) {
 				Array triple = cell_inst_dict[cell_locs[c]];
 				TypedArray<Transform3D> cell_xforms = triple[0];
-				PackedColorArray cell_colors = triple[1];
+				TypedArray<Color> cell_colors = triple[1];
 				for (int i = 0; i < cell_xforms.size(); i++) {
 					Transform3D t = cell_xforms[i];
 					t.origin += dst_translate;

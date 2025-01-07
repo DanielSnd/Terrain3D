@@ -206,7 +206,7 @@ Error Terrain3DRegion::save(const String &p_path, const bool p_16_bit) {
 	}
 	if (!p_path.is_empty()) {
 		TERRAINLOG(DEBUG, "Setting file path for region ", _location, " to ", p_path);
-		take_over_path(p_path);
+		_take_over_path(p_path);
 		// Set region path and take over the path from any other cached resources,
 		// incuding those in the undo queue
 	}
@@ -280,7 +280,7 @@ Dictionary Terrain3DRegion::get_data() const {
 	return dict;
 }
 
-Ref<Terrain3DRegion> Terrain3DRegion::duplicate(const bool p_deep) {
+Ref<Resource> Terrain3DRegion::duplicate(const bool p_deep) const {
 	Ref<Terrain3DRegion> region;
 	region.instantiate();
 	if (!p_deep) {

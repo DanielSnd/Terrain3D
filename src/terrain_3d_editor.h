@@ -3,11 +3,11 @@
 #ifndef TERRAIN3D_EDITOR_CLASS_H
 #define TERRAIN3D_EDITOR_CLASS_H
 
-#include "terrain_3d.h"
 #include "terrain_3d_region.h"
 
-using namespace godot;
+class Terrain3D;  // Forward declaration
 
+#ifdef TOOLS_ENABLED
 class Terrain3DEditor : public Object {
 	GDCLASS(Terrain3DEditor, Object);
 	CLASS_NAME();
@@ -164,4 +164,5 @@ inline Vector2 Terrain3DEditor::_get_rotated_uv(const Vector2 &p_uv, const real_
 	return uv.clamp(V2_ZERO, Vector2(1.f, 1.f));
 }
 
+#endif
 #endif // TERRAIN3D_EDITOR_CLASS_H

@@ -6,7 +6,9 @@
 #include "constants.h"
 #include "terrain_3d_assets.h"
 #include "terrain_3d_data.h"
+#ifdef TOOLS_ENABLED
 #include "terrain_3d_editor.h"
+#endif
 #include "terrain_3d_instancer.h"
 #include "terrain_3d_material.h"
 #include "terrain_3d_storage.h"
@@ -17,7 +19,6 @@
 #include "geoclipmap.h"
 #include "logger.h"
 #include "core/config/project_settings.h"
-#include "editor/editor_interface.h"
 #include "scene/3d/label_3d.h"
 #include "scene/3d/multimesh_instance_3d.h"
 #include "scene/3d/physics/collision_shape_3d.h"
@@ -142,15 +143,13 @@ private:
 			const Terrain3DData::HeightFilter p_filter, const bool require_nav, const int32_t x, const int32_t z) const;
 
 public:
-	static int debug_level;
-
 	Terrain3D();
 	~Terrain3D() {}
 
 	// Terrain
 	String get_version() const { return _version; }
 	void set_debug_level(const int p_level);
-	int get_debug_level() const { return debug_level; }
+	int get_debug_level() const { return Terrain3DLogger::get_debug_level(); }
 	void set_data_directory(String p_dir);
 	String get_data_directory() const { return (_data == nullptr) ? "" : _data_directory; }
 

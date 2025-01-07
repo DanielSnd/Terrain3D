@@ -4,8 +4,11 @@
 #define GEOCLIPMAP_CLASS_H
 
 #include "constants.h"
-
-using namespace godot;
+#include "core/math/vector3.h"
+#include "core/object/object.h"
+#include "core/math/aabb.h"
+#include "core/variant/dictionary.h"
+#include "core/variant/array.h"
 
 class GeoClipMap {
 	CLASS_NAME_STATIC("Terrain3DGeoClipMap");

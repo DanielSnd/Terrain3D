@@ -6,11 +6,14 @@
 #include "constants.h"
 #include "generated_texture.h"
 #include "terrain_3d_mesh_asset.h"
+#include "logger.h"
+#include "terrain_3d_util.h"
+#include "scene/resources/image_texture.h"
 #include "terrain_3d_texture_asset.h"
 
-using namespace godot;
 class Terrain3D;
 class Terrain3DInstancer;
+class Terrain3DTextureAsset;
 
 class Terrain3DAssets : public Resource {
 	GDCLASS(Terrain3DAssets, Resource);

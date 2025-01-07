@@ -2,8 +2,14 @@
 
 #include "logger.h"
 #include "terrain_3d_mesh_asset.h"
+#include "terrain_3d_assets.h"
+#include "scene/3d/mesh_instance_3d.h"
 
 #include "scene/resources/packed_scene.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/editor_interface.h"
+#endif
 
 ///////////////////////////
 // Private Functions
@@ -245,7 +251,7 @@ void Terrain3DMeshAsset::set_scene_file(const Ref<PackedScene> &p_scene_file) {
 		set_generated_type(TYPE_TEXTURE_CARD);
 		_density = 10.f;
 	}
-	LOG(DEBUG, "Emitting file_changed");
+	TERRAINLOG(DEBUG, "Emitting file_changed");
 	emit_signal("file_changed");
 	emit_signal("instancer_setting_changed");
 }
