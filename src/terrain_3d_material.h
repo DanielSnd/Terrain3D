@@ -6,6 +6,7 @@
 #include "constants.h"
 #include "generated_texture.h"
 #include "scene/resources/shader.h"
+#include "modules/regex/regex.h"
 
 class Terrain3D;
 
