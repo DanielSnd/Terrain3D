@@ -11,7 +11,9 @@
 #endif
 #include "terrain_3d_instancer.h"
 #include "terrain_3d_material.h"
+#ifdef TOOLS_ENABLED
 #include "editor/plugins/editor_plugin.h"
+#endif
 #include "scene/3d/mesh_instance_3d.h"
 
 #include "terrain_3d_util.h"
@@ -60,8 +62,10 @@ private:
 	Ref<Terrain3DMaterial> _material;
 	Ref<Terrain3DAssets> _assets;
 	Terrain3DInstancer *_instancer = nullptr;
+	#ifdef TOOLS_ENABLED
 	Terrain3DEditor *_editor = nullptr;
 	EditorPlugin *_plugin = nullptr;
+	#endif
 	// Current editor or gameplay camera we are centering the terrain on.
 	Camera3D *_camera = nullptr;
 	uint64_t _camera_instance_id = 0;
@@ -160,10 +164,12 @@ public:
 	Ref<Terrain3DAssets> get_assets() const { return _assets; }
 	Terrain3DInstancer *get_instancer() const { return _instancer; }
 	Node *get_mmi_parent() const { return _mmi_parent; }
+	#ifdef TOOLS_ENABLED
 	void set_editor(Terrain3DEditor *p_editor);
 	Terrain3DEditor *get_editor() const { return _editor; }
 	void set_plugin(EditorPlugin *p_plugin);
 	EditorPlugin *get_plugin() const { return _plugin; }
+	#endif
 	void set_camera(Camera3D *p_camera);
 	Camera3D *get_camera() const { return _camera; }
 

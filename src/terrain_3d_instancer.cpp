@@ -263,9 +263,12 @@ void Terrain3DInstancer::_backup_regionl(const Vector2i &p_region_loc) {
 }
 
 void Terrain3DInstancer::_backup_region(const Ref<Terrain3DRegion> &p_region) {
+	#ifdef TOOLS_ENABLED
 	if (_terrain->get_editor() != nullptr) {
 		_terrain->get_editor()->backup_region(p_region);
-	} else {
+	} else
+	#endif
+	{
 		p_region->set_modified(true);
 	}
 }
