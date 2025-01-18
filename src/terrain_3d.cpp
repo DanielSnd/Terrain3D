@@ -969,9 +969,11 @@ void Terrain3D::set_vertex_spacing(const real_t p_spacing) {
 		update_region_labels();
 		_instancer->_update_vertex_spacing(_vertex_spacing);
 	}
+	#ifdef TOOLS_ENABLED
 	if (IS_EDITOR && _plugin != nullptr) {
 		_plugin->call("update_region_grid");
 	}
+	#endif
 }
 
 void Terrain3D::set_render_layers(const uint32_t p_layers) {
@@ -1457,10 +1459,12 @@ void Terrain3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_assets", "assets"), &Terrain3D::set_assets);
 	ClassDB::bind_method(D_METHOD("get_assets"), &Terrain3D::get_assets);
 	ClassDB::bind_method(D_METHOD("get_instancer"), &Terrain3D::get_instancer);
+	#ifdef TOOLS_ENABLED
 	ClassDB::bind_method(D_METHOD("set_editor", "editor"), &Terrain3D::set_editor);
 	ClassDB::bind_method(D_METHOD("get_editor"), &Terrain3D::get_editor);
 	ClassDB::bind_method(D_METHOD("set_plugin", "plugin"), &Terrain3D::set_plugin);
 	ClassDB::bind_method(D_METHOD("get_plugin"), &Terrain3D::get_plugin);
+	#endif
 	ClassDB::bind_method(D_METHOD("set_camera", "camera"), &Terrain3D::set_camera);
 	ClassDB::bind_method(D_METHOD("get_camera"), &Terrain3D::get_camera);
 

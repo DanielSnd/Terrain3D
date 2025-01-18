@@ -2,7 +2,9 @@
 
 #include "register_types.h"
 #include "terrain_3d.h"
+#ifdef TOOLS_ENABLED
 #include "terrain_3d_editor.h"
+#endif
 
 using namespace godot;
 
@@ -13,7 +15,9 @@ void initialize_terrain3d_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<Terrain3D>();
 	ClassDB::register_class<Terrain3DAssets>();
 	ClassDB::register_class<Terrain3DData>();
+	#ifdef TOOLS_ENABLED
 	ClassDB::register_class<Terrain3DEditor>();
+	#endif
 	ClassDB::register_class<Terrain3DInstancer>();
 	ClassDB::register_class<Terrain3DMaterial>();
 	ClassDB::register_class<Terrain3DMeshAsset>();
