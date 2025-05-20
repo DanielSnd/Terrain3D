@@ -1,11 +1,6 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include "core/object/ref_counted.h"
-#include "servers/rendering_server.h"
-
 #include "generated_texture.h"
-#include "logger.h"
-
 ///////////////////////////
 // Public Functions
 ///////////////////////////

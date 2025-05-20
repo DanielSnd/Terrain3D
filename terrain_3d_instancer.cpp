@@ -12,7 +12,7 @@
 
 // Creates MMIs based on stored Multimesh data
 void Terrain3DInstancer::_update_mmis(const Vector2i &p_region_loc, const int p_mesh_id) {
-	IS_DATA_INIT(VOID);
+	IS_DATA_INIT_VOID();
 	TERRAINLOG(INFO, "Updating MMIs for ", (p_region_loc.x == INT32_MAX) ? "all regions" : "region " + String(p_region_loc),
 			(p_mesh_id == -1) ? ", all meshes" : ", mesh " + String::num_int64(p_mesh_id));
 
@@ -139,7 +139,7 @@ void Terrain3DInstancer::_update_mmis(const Vector2i &p_region_loc, const int p_
 }
 
 void Terrain3DInstancer::_update_vertex_spacing(const real_t p_vertex_spacing) {
-	IS_DATA_INIT(VOID);
+	IS_DATA_INIT_VOID();
 	Array region_locations = _terrain->get_data()->get_region_locations();
 	for (int r = 0; r < region_locations.size(); r++) {
 		Vector2i region_loc = region_locations[r];
@@ -315,13 +315,13 @@ void Terrain3DInstancer::initialize(Terrain3D *p_terrain) {
 	if (p_terrain) {
 		_terrain = p_terrain;
 	}
-	IS_DATA_INIT_MESG("Terrain3D not initialized yet", VOID);
+	IS_DATA_INIT_MESG_VOID("Terrain3D not initialized yet");
 	TERRAINLOG(INFO, "Initializing Instancer");
 	_update_mmis();
 }
 
 void Terrain3DInstancer::destroy() {
-	IS_DATA_INIT(VOID);
+	IS_DATA_INIT_VOID();
 	TERRAINLOG(INFO, "Destroying all MMIs");
 
 	// Iterate over keys as subfunction will invalidate standard iterator
@@ -370,7 +370,7 @@ void Terrain3DInstancer::clear_by_region(const Ref<Terrain3DRegion> &p_region, c
 }
 
 void Terrain3DInstancer::add_instances(const Vector3 &p_global_position, const Dictionary &p_params) {
-	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
+	IS_DATA_INIT_MESG_VOID("Instancer isn't initialized.");
 
 	int mesh_id = p_params.get("asset_id", 0);
 	if (mesh_id < 0 || mesh_id >= _terrain->get_assets()->get_mesh_count()) {
@@ -480,7 +480,7 @@ void Terrain3DInstancer::add_instances(const Vector3 &p_global_position, const D
 }
 
 void Terrain3DInstancer::remove_instances(const Vector3 &p_global_position, const Dictionary &p_params) {
-	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
+	IS_DATA_INIT_MESG_VOID("Instancer isn't initialized.");
 
 	int mesh_id = p_params.get("asset_id", 0);
 	int mesh_count = _terrain->get_assets()->get_mesh_count();
@@ -628,7 +628,7 @@ void Terrain3DInstancer::add_multimesh(const int p_mesh_id, const Ref<MultiMesh>
 
 // Expects transforms in global space
 void Terrain3DInstancer::add_transforms(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors, const bool p_update) {
-	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
+	IS_DATA_INIT_MESG_VOID("Instancer isn't initialized.");
 	if (p_xforms.size() == 0) {
 		return;
 	}
@@ -679,7 +679,7 @@ void Terrain3DInstancer::add_transforms(const int p_mesh_id, const TypedArray<Tr
 // Appends new global transforms to existing cells, offsetting transforms to region space, scaled by vertex spacing
 void Terrain3DInstancer::append_location(const Vector2i &p_region_loc, const int p_mesh_id,
 		const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors, const bool p_update) {
-	IS_DATA_INIT(VOID);
+	IS_DATA_INIT_VOID();
 	Ref<Terrain3DRegion> region = _terrain->get_data()->get_region(p_region_loc);
 	if (region.is_null()) {
 		return;
@@ -752,7 +752,7 @@ void Terrain3DInstancer::append_region(const Ref<Terrain3DRegion> &p_region, con
 
 // Review all transforms in one area and adjust their transforms w/ the current height
 void Terrain3DInstancer::update_transforms(const AABB &p_aabb) {
-	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
+	IS_DATA_INIT_MESG_VOID("Instancer isn't initialized.");
 	Rect2 rect = aabb2rect(p_aabb);
 	TERRAINLOG(EXTREME, "Updating transforms within ", rect);
 	Vector2 global_position = rect.get_center();
@@ -932,7 +932,7 @@ void Terrain3DInstancer::copy_paste_dfr(const Terrain3DRegion *p_src_region, con
 // Changes the ID of a mesh, without changing the mesh on the ground
 // Called when the mesh asset id has changed. Updates Multimeshes and MMIs dictionary keys
 void Terrain3DInstancer::swap_ids(const int p_src_id, const int p_dst_id) {
-	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
+	IS_DATA_INIT_MESG_VOID("Instancer isn't initialized.");
 	Ref<Terrain3DAssets> assets = _terrain->get_assets();
 	int mesh_count = assets->get_mesh_count();
 	TERRAINLOG(INFO, "Swapping IDs of multimeshes: ", p_src_id, " and ", p_dst_id);
@@ -984,7 +984,7 @@ void Terrain3DInstancer::force_update_mmis() {
 }
 
 void Terrain3DInstancer::dump_data() {
-	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
+	IS_DATA_INIT_MESG_VOID("Instancer isn't initialized.");
 	Array region_locations = _terrain->get_data()->get_region_locations();
 	TERRAINLOG(WARN, "Dumping Instancer data for ", region_locations.size(), " active regions");
 	for (int i = 0; i < region_locations.size(); i++) {

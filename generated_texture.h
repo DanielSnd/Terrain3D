@@ -3,11 +3,11 @@
 #ifndef GENERATEDTEXTURE_CLASS_H
 #define GENERATEDTEXTURE_CLASS_H
 
-#include "core/io/image.h"
-#include "core/object/ref_counted.h"
-#include "servers/rendering_server.h"
-
 #include "constants.h"
+#include "core/object/ref_counted.h"
+#include "core/io/image.h"
+#include "logger.h"
+#include "servers/rendering_server.h"
 
 class GeneratedTexture : public RefCounted {
 	GDCLASS(GeneratedTexture, RefCounted);

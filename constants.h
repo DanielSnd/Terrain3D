@@ -26,14 +26,17 @@
 
 // Set class name for logger.h
 
-#define CLASS_NAME() const String __class__ = get_class_static() + \
+#define TERRAIN_CLASS_NAME() const String __class__ = get_class_static() + \
 		String("#") + String::num_uint64(get_instance_id()).right(4);
 
-#define CLASS_NAME_STATIC(p_name) static inline const char *__class__ = p_name;
+#define TERRAIN_CLASS_NAME_STATIC(p_name) static inline const char *__class__ = p_name;
 
 // Validation macros
 
-#define VOID // a return value for void, to avoid compiler warnings
+#define IS_INIT_VOID()           \
+	if (_terrain == nullptr) { \
+		return;            \
+	}
 
 #define IS_INIT(ret)           \
 	if (_terrain == nullptr) { \
@@ -44,6 +47,12 @@
 	if (_terrain == nullptr) {  \
 		TERRAINLOG(ERROR, mesg);       \
 		return ret;             \
+	}
+
+#define IS_INIT_MESG_VOID(mesg) \
+	if (_terrain == nullptr) {  \
+		TERRAINLOG(ERROR, mesg);       \
+		return;             \
 	}
 
 #define IS_INIT_COND(cond, ret)        \
@@ -57,9 +66,26 @@
 		return ret;                        \
 	}
 
+#define IS_INIT_COND_MESG_VOID(cond, mesg) \
+	if (_terrain == nullptr || cond) {     \
+		TERRAINLOG(ERROR, mesg);                  \
+		return;                        \
+	}
+
+#define IS_INSTANCER_INIT_VOID()                                         \
+	if (_terrain == nullptr || _terrain->get_instancer() == nullptr) { \
+		return;                                                    \
+	}
+
 #define IS_INSTANCER_INIT(ret)                                         \
 	if (_terrain == nullptr || _terrain->get_instancer() == nullptr) { \
 		return ret;                                                    \
+	}
+
+#define IS_INSTANCER_INIT_MESG_VOID(mesg)                              \
+	if (_terrain == nullptr || _terrain->get_instancer() == nullptr) { \
+		TERRAINLOG(ERROR, mesg);                                              \
+		return;                                                    \
 	}
 
 #define IS_INSTANCER_INIT_MESG(mesg, ret)                              \
@@ -77,6 +103,17 @@
 	if (_terrain == nullptr || _terrain->get_data() == nullptr) { \
 		TERRAINLOG(ERROR, mesg);                                         \
 		return ret;                                               \
+	}
+
+#define IS_DATA_INIT_VOID()                              \
+	if (_terrain == nullptr || _terrain->get_data() == nullptr) { \
+		return;                                               \
+	}
+
+#define IS_DATA_INIT_MESG_VOID(mesg)                              \
+	if (_terrain == nullptr || _terrain->get_data() == nullptr) { \
+		TERRAINLOG(ERROR, mesg);                                         \
+		return;                                               \
 	}
 
 #endif // CONSTANTS_CLASS_H

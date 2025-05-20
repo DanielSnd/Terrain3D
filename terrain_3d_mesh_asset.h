@@ -12,7 +12,7 @@ using namespace godot;
 
 class Terrain3DMeshAsset : public Terrain3DAssetResource {
 	GDCLASS(Terrain3DMeshAsset, Terrain3DAssetResource);
-	CLASS_NAME();
+	TERRAIN_CLASS_NAME();
 	friend class Terrain3DAssets;
 
 public:

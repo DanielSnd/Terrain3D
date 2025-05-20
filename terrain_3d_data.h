@@ -3,8 +3,6 @@
 #ifndef TERRAIN3D_DATA_CLASS_H
 #define TERRAIN3D_DATA_CLASS_H
 
-#include <array>
-
 #include "constants.h"
 #include "generated_texture.h"
 #include "terrain_3d_region.h"
@@ -16,7 +14,7 @@ using namespace godot;
 
 class Terrain3DData : public Object {
 	GDCLASS(Terrain3DData, Object);
-	CLASS_NAME();
+	TERRAIN_CLASS_NAME();
 	friend Terrain3D;
 
 public: // Constants

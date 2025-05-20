@@ -5,6 +5,7 @@
 
 #include "constants.h"
 #include "generated_texture.h"
+#include "terrain_3d.h"
 #include "terrain_3d_mesh_asset.h"
 #include "logger.h"
 #include "terrain_3d_util.h"
@@ -17,7 +18,7 @@ class Terrain3DTextureAsset;
 
 class Terrain3DAssets : public Resource {
 	GDCLASS(Terrain3DAssets, Resource);
-	CLASS_NAME();
+	TERRAIN_CLASS_NAME();
 
 public: // Constants
 	enum AssetType {

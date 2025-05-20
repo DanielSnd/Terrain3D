@@ -1,7 +1,6 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include "terrain_3d_assets.h"
-#include "terrain_3d.h"
 
 ///////////////////////////
 // Private Functions
@@ -149,7 +148,7 @@ void Terrain3DAssets::_set_asset(const AssetType p_type, const int p_id, const R
 }
 
 void Terrain3DAssets::_update_texture_files() {
-	IS_INIT(VOID);
+	IS_INIT_VOID();
 	TERRAINLOG(DEBUG, "Received texture_changed signal");
 	_generated_albedo_textures.clear();
 	_generated_normal_textures.clear();
@@ -431,7 +430,7 @@ void Terrain3DAssets::set_mesh_asset(const int p_id, const Ref<Terrain3DMeshAsse
 	TERRAINLOG(INFO, "Setting mesh id: ", p_id, ", ", p_mesh_asset);
 	_set_asset(TYPE_MESH, p_id, p_mesh_asset);
 	if (p_mesh_asset.is_null()) {
-		IS_INSTANCER_INIT(VOID);
+		IS_INSTANCER_INIT_VOID();
 		_terrain->get_instancer()->clear_by_mesh(p_id);
 	}
 	update_mesh_list();
@@ -518,7 +517,7 @@ void Terrain3DAssets::create_mesh_thumbnails(const int p_id, const Vector2i &p_s
 }
 
 void Terrain3DAssets::update_mesh_list() {
-	IS_INSTANCER_INIT(VOID);
+	IS_INSTANCER_INIT_VOID();
 	TERRAINLOG(INFO, "Updating mesh list");
 	if (_mesh_list.size() == 0) {
 		TERRAINLOG(DEBUG, "Mesh list empty, clearing instancer and adding a default mesh");

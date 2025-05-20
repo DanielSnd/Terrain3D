@@ -10,7 +10,7 @@ using namespace godot;
 
 class Terrain3DRegion : public Resource {
 	GDCLASS(Terrain3DRegion, Resource);
-	CLASS_NAME();
+	TERRAIN_CLASS_NAME();
 
 public: // Constants
 	enum MapType {

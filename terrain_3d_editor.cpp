@@ -532,7 +532,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 }
 
 void Terrain3DEditor::_store_undo() {
-	IS_INIT_COND_MESG(_terrain->get_plugin() == nullptr, "_terrain isn't initialized, returning", VOID);
+	IS_INIT_COND_MESG_VOID(_terrain->get_plugin() == nullptr, "_terrain isn't initialized, returning");
 	if (_tool < 0 || _tool >= TOOL_MAX) {
 		return;
 	}
@@ -579,7 +579,7 @@ void Terrain3DEditor::_store_undo() {
 }
 
 void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
-	IS_INIT_COND_MESG(_terrain->get_plugin() == nullptr, "_terrain isn't initialized, returning", VOID);
+	IS_INIT_COND_MESG_VOID(_terrain->get_plugin() == nullptr, "_terrain isn't initialized, returning");
 	TERRAINLOG(INFO, "Applying Undo/Redo data");
 
 	Terrain3DData *data = _terrain->get_data();
@@ -736,7 +736,7 @@ void Terrain3DEditor::set_tool(const Tool p_tool) {
 
 // Called on mouse click
 void Terrain3DEditor::start_operation(const Vector3 &p_global_position) {
-	IS_DATA_INIT_MESG("Terrain isn't initialized", VOID);
+	IS_DATA_INIT_MESG_VOID("Terrain isn't initialized");
 	TERRAINLOG(INFO, "Setting up undo snapshot");
 	_undo_data.clear();
 	_undo_data["region_locations"] = _terrain->get_data()->get_region_locations().duplicate();
@@ -753,7 +753,7 @@ void Terrain3DEditor::start_operation(const Vector3 &p_global_position) {
 
 // Called on mouse movement with left mouse button down
 void Terrain3DEditor::operate(const Vector3 &p_global_position, const real_t p_camera_direction) {
-	IS_DATA_INIT_MESG("Terrain isn't initialized", VOID);
+	IS_DATA_INIT_MESG_VOID("Terrain isn't initialized");
 	if (!_is_operating) {
 		TERRAINLOG(ERROR, "Run start_operation() before operating");
 		return;
@@ -792,7 +792,7 @@ void Terrain3DEditor::backup_region(const Ref<Terrain3DRegion> &p_region) {
 
 // Called on left mouse button released
 void Terrain3DEditor::stop_operation() {
-	IS_DATA_INIT_MESG("Terrain isn't initialized", VOID);
+	IS_DATA_INIT_MESG_VOID("Terrain isn't initialized");
 	// If undo was created and terrain actually modified, store it
 	TERRAINLOG(DEBUG, "Backed up regions: ", _original_regions.size(), ", Edited regions: ", _edited_regions.size(),
 			", Added/Removed regions: ", _added_removed_locations.size());

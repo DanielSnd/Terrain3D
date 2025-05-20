@@ -263,7 +263,7 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 }
 
 void Terrain3DMaterial::_update_shader() {
-	IS_INIT(VOID);
+	IS_INIT_VOID();
 	TERRAINLOG(INFO, "Updating shader");
 	String code;
 	Ref<RegEx> regex;
@@ -375,7 +375,7 @@ void Terrain3DMaterial::_update_shader() {
 }
 
 void Terrain3DMaterial::_update_maps() {
-	IS_DATA_INIT(VOID);
+	IS_DATA_INIT_VOID();
 	TERRAINLOG(EXTREME, "Updating maps in shader");
 
 	Terrain3DData *data = _terrain->get_data();
@@ -420,7 +420,7 @@ void Terrain3DMaterial::_update_maps() {
 
 // Called from signal connected in Terrain3D, emitted by texture_list
 void Terrain3DMaterial::_update_texture_arrays() {
-	IS_DATA_INIT_MESG("Material not initialized", VOID);
+	IS_DATA_INIT_MESG_VOID("Material not initialized");
 	Ref<Terrain3DAssets> asset_list = _terrain->get_assets();
 	TERRAINLOG(INFO, "Updating texture arrays in shader");
 	if (asset_list.is_null()) {
@@ -489,7 +489,7 @@ void Terrain3DMaterial::initialize(Terrain3D *p_terrain) {
 }
 
 Terrain3DMaterial::~Terrain3DMaterial() {
-	IS_INIT(VOID);
+	IS_INIT_VOID();
 	TERRAINLOG(INFO, "Destroying material");
 	RenderingServer::get_singleton()->free(_material);
 }
@@ -725,7 +725,7 @@ Error Terrain3DMaterial::save(const String &p_path) {
 // Add shader uniforms to properties. Hides uniforms that begin with _
 void Terrain3DMaterial::_get_property_list(List<PropertyInfo> *p_list) const {
 	Resource::_get_property_list(p_list);
-	IS_INIT(VOID);
+	IS_INIT_VOID();
 	Array param_list;
 	if (_shader_override_enabled && _shader_override.is_valid()) {
 		// Get shader parameters from custom shader

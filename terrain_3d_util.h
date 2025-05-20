@@ -17,7 +17,7 @@ using namespace godot;
 
 class Terrain3DUtil : public Object {
 	GDCLASS(Terrain3DUtil, Object);
-	CLASS_NAME_STATIC("Terrain3DUtil");
+	TERRAIN_CLASS_NAME_STATIC("Terrain3DUtil");
 
 public:
 	// Print info to the console

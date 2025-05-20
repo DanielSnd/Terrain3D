@@ -13,7 +13,7 @@ class Terrain3DAssets;
 
 class Terrain3DInstancer : public Object {
 	GDCLASS(Terrain3DInstancer, Object);
-	CLASS_NAME();
+	TERRAIN_CLASS_NAME();
 	friend Terrain3D;
 
 public: // Constants

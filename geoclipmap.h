@@ -11,7 +11,7 @@
 #include "core/variant/array.h"
 
 class GeoClipMap {
-	CLASS_NAME_STATIC("Terrain3DGeoClipMap");
+	TERRAIN_CLASS_NAME_STATIC("Terrain3DGeoClipMap");
 
 	static inline int _patch_2d(const int x, const int y, const int res);
 	static void _subdivide_half(PackedVector3Array &vertices, PackedInt32Array &indices);
