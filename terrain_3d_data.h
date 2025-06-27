@@ -10,11 +10,8 @@
 
 class Terrain3D;
 
-using namespace godot;
-
 class Terrain3DData : public Object {
 	GDCLASS(Terrain3DData, Object);
-	TERRAIN_CLASS_NAME();
 	friend Terrain3D;
 
 public: // Constants

@@ -18,7 +18,6 @@ class Terrain3DTextureAsset;
 
 class Terrain3DAssets : public Resource {
 	GDCLASS(Terrain3DAssets, Resource);
-	TERRAIN_CLASS_NAME();
 
 public: // Constants
 	enum AssetType {

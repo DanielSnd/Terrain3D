@@ -6,11 +6,8 @@
 #include "constants.h"
 #include "terrain_3d_util.h"
 
-using namespace godot;
-
 class Terrain3DRegion : public Resource {
 	GDCLASS(Terrain3DRegion, Resource);
-	TERRAIN_CLASS_NAME();
 
 public: // Constants
 	enum MapType {
@@ -112,7 +109,7 @@ public:
 	// Utility
 	void set_data(const Dictionary &p_data);
 	Dictionary get_data() const;
-	virtual Ref<Resource> duplicate(bool p_subresources = false) const override;
+	Ref<Resource> duplicate(bool p_subresources = false) const;
 
 protected:
 	static void _bind_methods();

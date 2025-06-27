@@ -8,11 +8,9 @@
 #include "scene/3d/visual_instance_3d.h"
 #include "scene/resources/packed_scene.h"
 
-using namespace godot;
-
 class Terrain3DMeshAsset : public Terrain3DAssetResource {
 	GDCLASS(Terrain3DMeshAsset, Terrain3DAssetResource);
-	TERRAIN_CLASS_NAME();
+
 	friend class Terrain3DAssets;
 
 public:

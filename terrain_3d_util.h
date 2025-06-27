@@ -8,8 +8,6 @@
 #include "core/io/resource_loader.h"
 #include "scene/main/node.h"
 
-using namespace godot;
-
 // This file holds stateless utility functions for both C++ and GDScript
 // The class exposes static member and inline functions to GDscript
 // The inline functions below are not part of the class but are in the namespace, eg bilerp
@@ -17,7 +15,6 @@ using namespace godot;
 
 class Terrain3DUtil : public Object {
 	GDCLASS(Terrain3DUtil, Object);
-	TERRAIN_CLASS_NAME_STATIC("Terrain3DUtil");
 
 public:
 	// Print info to the console

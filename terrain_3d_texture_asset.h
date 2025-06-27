@@ -8,7 +8,7 @@
 
 class Terrain3DTextureAsset : public Terrain3DAssetResource {
 	GDCLASS(Terrain3DTextureAsset, Terrain3DAssetResource);
-	TERRAIN_CLASS_NAME();
+
 	friend class Terrain3DAssets;
 
 	Color _albedo_color = Color(1.f, 1.f, 1.f, 1.f);

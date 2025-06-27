@@ -419,7 +419,7 @@ void Terrain3DInstancer::add_instances(const Vector3 &p_global_position, const D
 
 		// Get random XZ position and height in a circle
 		real_t r_radius = radius * sqrt(Math::randf());
-		real_t r_theta = Math::randf() * Math_TAU;
+		real_t r_theta = Math::randf() * Math::TAU;
 		Vector3 rand_vec = Vector3(r_radius * cos(r_theta), 0.f, r_radius * sin(r_theta));
 		Vector3 position = p_global_position + rand_vec;
 		// Get height, but skip holes
@@ -446,12 +446,12 @@ void Terrain3DInstancer::add_instances(const Vector3 &p_global_position, const D
 				t.basis = Basis(x_axis, normal, z_axis).orthonormalized();
 			}
 		}
-		real_t spin = (fixed_spin + random_spin * Math::randf()) * Math_PI / 180.f;
-		if (abs(spin) > 0.001f) {
+		real_t spin = (fixed_spin + random_spin * Math::randf()) * Math::PI / 180.f;
+		if (Math::abs(spin) > 0.001f) {
 			t.basis = t.basis.rotated(normal, spin);
 		}
-		real_t tilt = (fixed_tilt + random_tilt * (2.f * Math::randf() - 1.f)) * Math_PI / 180.f;
-		if (abs(tilt) > 0.001f) {
+		real_t tilt = (fixed_tilt + random_tilt * (2.f * Math::randf() - 1.f)) * Math::PI / 180.f;
+		if (Math::abs(tilt) > 0.001f) {
 			t.basis = t.basis.rotated(t.basis.get_column(0), tilt); // Rotate pitch, X-axis
 		}
 

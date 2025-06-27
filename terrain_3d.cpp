@@ -274,7 +274,7 @@ void Terrain3D::_update_collision() {
 		// Non rotated shape for normal array index above
 		//Transform3D xform = Transform3D(Basis(), global_pos);
 		// Rotated shape Y=90 for -90 rotated array index
-		Transform3D xform = Transform3D(Basis(Vector3(0.f, 1.f, 0.f), Math_PI * .5f),
+		Transform3D xform = Transform3D(Basis(Vector3(0.f, 1.f, 0.f), Math::PI * .5f),
 				global_pos + Vector3(_region_size, 0.f, _region_size) * .5f);
 		xform.scale(Vector3(_vertex_spacing, 1.f, _vertex_spacing));
 

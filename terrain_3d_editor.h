@@ -10,7 +10,6 @@ class Terrain3D;  // Forward declaration
 #ifdef TOOLS_ENABLED
 class Terrain3DEditor : public Object {
 	GDCLASS(Terrain3DEditor, Object);
-	TERRAIN_CLASS_NAME();
 
 public: // Constants
 	enum Tool {

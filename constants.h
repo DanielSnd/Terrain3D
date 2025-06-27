@@ -24,13 +24,6 @@
 #define V3_ZERO Vector3(0.f, 0.f, 0.f)
 #define V3_MAX Vector3(FLT_MAX, FLT_MAX, FLT_MAX)
 
-// Set class name for logger.h
-
-#define TERRAIN_CLASS_NAME() const String __class__ = get_class_static() + \
-		String("#") + String::num_uint64(get_instance_id()).right(4);
-
-#define TERRAIN_CLASS_NAME_STATIC(p_name) static inline const char *__class__ = p_name;
-
 // Validation macros
 
 #define IS_INIT_VOID()           \
